@@ -1,7 +1,7 @@
 <script>
   // Song library: metadata, instrumental upload, lyrics file, performance history.
   import { onMount } from 'svelte';
-  import { Button, ConfirmDialog, Toaster, toast } from 'bluebolt-ui';
+  import { Button, ConfirmDialog, Toaster, toast } from '../lib/ui/index.js';
   import Nav from '../lib/Nav.svelte';
   import { api, today } from '../lib/client.js';
   import { parseLyrics } from '../lib/lyrics.js';
@@ -150,7 +150,7 @@
             <td>{s.artist}</td>
             <td>{#if s.hasAudio}<span class="ok">✓</span>{:else}<span class="bad">—</span>{/if}</td>
             <td>{#if s.hasLyrics}<span class="ok">✓</span> <span class="muted">{s.lyrics}</span>{:else}<span class="bad">—</span>{/if}</td>
-            <td class="bb-num">{s.performances?.length || 0}</td>
+            <td class="ui-num">{s.performances?.length || 0}</td>
             <td class="muted">{last(s)}</td>
             <td class="actions">
               <Button size="sm" variant="ghost" onclick={() => edit(s.id)}>編輯</Button>
@@ -242,8 +242,8 @@
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: var(--bb-space-3);
-    margin: var(--bb-space-3) 0;
+    gap: var(--ui-space-3);
+    margin: var(--ui-space-3) 0;
   }
   .files {
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -258,14 +258,14 @@
   .x {
     border: 0;
     background: none;
-    color: var(--bb-ink-3);
+    color: var(--ui-ink-3);
     cursor: pointer;
   }
   .footer {
-    margin-top: var(--bb-space-4);
+    margin-top: var(--ui-space-4);
   }
   h3 {
-    font-size: var(--bb-text-md);
-    margin: var(--bb-space-4) 0 var(--bb-space-2);
+    font-size: var(--ui-text-md);
+    margin: var(--ui-space-4) 0 var(--ui-space-2);
   }
 </style>

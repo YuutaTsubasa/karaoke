@@ -2,7 +2,7 @@
   // Live control page. Open it in a browser, or add it to OBS as a Custom Browser Dock
   // (Docks → Custom Browser Docks) so the shortcuts work while OBS is focused.
   import { onMount } from 'svelte';
-  import { Button, StatusLamp, Toaster, toast } from 'bluebolt-ui';
+  import { Button, StatusLamp, Toaster, toast } from '../lib/ui/index.js';
   import Nav from '../lib/Nav.svelte';
   import { api, clock, listen, today } from '../lib/client.js';
   import { FONTS, THEMES } from '../lib/theme.js';
@@ -139,7 +139,7 @@
         <div class="title">{status?.title ?? '（未載入）'}</div>
         <div class="muted">{status?.artist ?? ''}</div>
       </div>
-      <div class="time bb-num">{clock(status?.time)} / {clock(status?.duration)}</div>
+      <div class="time ui-num">{clock(status?.time)} / {clock(status?.duration)}</div>
     </div>
     <button class="bar" onclick={seekTo} aria-label="跳到">
       <span style:width="{status?.duration ? (status.time / status.duration) * 100 : 0}%"></span>
@@ -259,36 +259,36 @@
 
 <style>
   .now .title {
-    font-size: var(--bb-text-xl);
+    font-size: var(--ui-text-xl);
     font-weight: 700;
   }
   .time {
-    font-size: var(--bb-text-xl);
+    font-size: var(--ui-text-xl);
   }
   .bar {
     display: block;
     width: 100%;
     height: 10px;
-    margin: var(--bb-space-3) 0;
+    margin: var(--ui-space-3) 0;
     padding: 0;
     border: 0;
-    background: var(--bb-line);
+    background: var(--ui-line);
     cursor: pointer;
   }
   .bar span {
     display: block;
     height: 100%;
-    background: var(--bb-blue);
+    background: var(--ui-blue);
   }
   .sliders {
-    margin-top: var(--bb-space-4);
-    gap: var(--bb-space-5);
+    margin-top: var(--ui-space-4);
+    gap: var(--ui-space-5);
     align-items: flex-start;
   }
   .cols {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 340px;
-    gap: var(--bb-space-4);
+    gap: var(--ui-space-4);
   }
   @media (max-width: 860px) {
     .cols {
@@ -299,7 +299,7 @@
     margin: 0;
   }
   tr.playing {
-    background: var(--bb-blue-soft);
+    background: var(--ui-blue-soft);
   }
   .nowrap {
     white-space: nowrap;
@@ -320,18 +320,18 @@
   .x {
     border: 0;
     background: none;
-    color: var(--bb-ink-3);
+    color: var(--ui-ink-3);
     cursor: pointer;
   }
   .look {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--bb-space-2);
-    margin-bottom: var(--bb-space-3);
+    gap: var(--ui-space-2);
+    margin-bottom: var(--ui-space-3);
   }
   .url {
     word-break: break-all;
-    font-family: var(--bb-font-mono);
+    font-family: var(--ui-font-mono);
   }
   .keys {
     line-height: 2;

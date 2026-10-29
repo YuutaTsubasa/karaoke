@@ -5,7 +5,7 @@
   //   line ends); for the last syllable of a line, key up = the line ends, so hold it.
   // Hold mode: key down = start, key up = end, for every syllable.
   import { onMount, tick } from 'svelte';
-  import { Button, Segmented, Toaster, toast } from 'bluebolt-ui';
+  import { Button, Segmented, Toaster, toast } from '../lib/ui/index.js';
   import Nav from '../lib/Nav.svelte';
   import KaraokeStage from '../lib/KaraokeStage.svelte';
   import { api, clock } from '../lib/client.js';
@@ -317,7 +317,7 @@
             <Button size="sm" variant="ghost" onclick={() => (audio.currentTime = Math.max(0, audio.currentTime - 3))} en="Left">-3 秒</Button>
             <Button size="sm" variant="ghost" onclick={() => (audio.currentTime += 3)} en="Right">+3 秒</Button>
             <Button size="sm" variant="ghost" onclick={undo} en="Backspace">退一個</Button>
-            <span class="bb-num">{clock(time)}.{String(Math.floor((time % 1) * 100)).padStart(2, '0')} / {clock(duration)}</span>
+            <span class="ui-num">{clock(time)}.{String(Math.floor((time % 1) * 100)).padStart(2, '0')} / {clock(duration)}</span>
           </div>
           <input class="seek" type="range" min="0" max={duration || 0} step="0.01" value={time} oninput={(e) => (audio.currentTime = Number(e.currentTarget.value))} />
           <div class="row">
@@ -354,7 +354,7 @@
       <div class="lines" bind:this={listEl}>
         {#each lines as line, l}
           <div class="line" class:current={l === ptr.l}>
-            <span class="no bb-num">{l + 1}</span>
+            <span class="no ui-num">{l + 1}</span>
             <div class="syls">
               {#each line.syllables as s, i}
                 <button
@@ -391,7 +391,7 @@
   .cols {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    gap: var(--bb-space-4);
+    gap: var(--ui-space-4);
   }
   @media (max-width: 900px) {
     .cols {
@@ -401,14 +401,14 @@
   .stage-box {
     position: relative;
     aspect-ratio: 16 / 9;
-    margin-bottom: var(--bb-space-4);
+    margin-bottom: var(--ui-space-4);
     background:
       radial-gradient(ellipse at 30% 20%, #2b3f8f 0%, transparent 60%),
       linear-gradient(160deg, #10183a, #05070c);
   }
   .seek {
     width: 100%;
-    margin: var(--bb-space-3) 0;
+    margin: var(--ui-space-3) 0;
   }
   .field.inline {
     flex-direction: row;
@@ -426,17 +426,17 @@
   }
   .line {
     display: flex;
-    gap: var(--bb-space-2);
+    gap: var(--ui-space-2);
     align-items: flex-start;
     padding: 6px 4px;
-    border-bottom: 1px solid var(--bb-line);
+    border-bottom: 1px solid var(--ui-line);
   }
   .line.current {
-    background: color-mix(in srgb, var(--bb-blue-soft) 50%, transparent);
+    background: color-mix(in srgb, var(--ui-blue-soft) 50%, transparent);
   }
   .no {
     width: 2em;
-    color: var(--bb-ink-3);
+    color: var(--ui-ink-3);
     padding-top: 1.1em;
   }
   .syls {
@@ -455,32 +455,32 @@
     font: inherit;
     font-size: 1.15rem;
     white-space: pre;
-    border: 1px solid var(--bb-line-2);
-    background: var(--bb-surface);
-    color: var(--bb-ink-3);
+    border: 1px solid var(--ui-line-2);
+    background: var(--ui-surface);
+    color: var(--ui-ink-3);
     cursor: pointer;
   }
   .syl rt {
     font-size: 0.55em;
   }
   .syl small {
-    font-family: var(--bb-font-mono);
+    font-family: var(--ui-font-mono);
     font-size: 0.62rem;
-    color: var(--bb-ink-3);
+    color: var(--ui-ink-3);
   }
   .syl.timed {
-    color: var(--bb-ink);
-    border-color: var(--bb-blue);
+    color: var(--ui-ink);
+    border-color: var(--ui-blue);
   }
   .syl.now {
-    background: var(--bb-blue);
-    color: var(--bb-on-blue);
+    background: var(--ui-blue);
+    color: var(--ui-on-blue);
   }
   .syl.now small {
-    color: var(--bb-on-blue);
+    color: var(--ui-on-blue);
   }
   .syl.ptr {
-    outline: 3px solid var(--bb-yellow);
+    outline: 3px solid var(--ui-yellow);
     outline-offset: 1px;
   }
   .lineops {
@@ -490,9 +490,9 @@
   }
   .mini {
     width: 1.8em;
-    border: 1px solid var(--bb-line-2);
-    background: var(--bb-surface);
-    color: var(--bb-ink-2);
+    border: 1px solid var(--ui-line-2);
+    background: var(--ui-surface);
+    color: var(--ui-ink-2);
     cursor: pointer;
   }
 </style>

@@ -1,0 +1,52 @@
+/* Design tokens for the library / control / timing pages (not used by the OBS player). */
+:root {
+  color-scheme: light dark;
+  --ui-paper: #f3f6fd;
+  --ui-surface: #ffffff;
+  --ui-ink: #0b0f1a;
+  --ui-ink-2: #3a4252;
+  --ui-ink-3: #5f6878;
+  --ui-line: rgb(11 15 26 / 0.14);
+  --ui-line-2: rgb(11 15 26 / 0.28);
+  --ui-blue: #183dd6;
+  --ui-blue-soft: #c4d6ff;
+  --ui-on-blue: #ffffff;
+  --ui-yellow: #ffd21f;
+  --ui-on-yellow: #0b0f1a;
+  --ui-strip: #0b0f1a;
+  --ui-on-strip: #ffffff;
+  --ui-shadow: 3px 3px 0 var(--ui-ink);
+
+  --ui-font: "Noto Sans TC Variable", "Microsoft JhengHei UI", "PingFang TC", system-ui, sans-serif;
+  --ui-font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  --ui-text-sm: 0.875rem;
+  --ui-text-md: 1rem;
+  --ui-text-lg: 1.25rem;
+  --ui-text-xl: 1.75rem;
+
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 24px;
+  --ui-space-7: 48px;
+  --ui-radius: 3px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ui-paper: #060b1a;
+    --ui-surface: #0d1530;
+    --ui-ink: #eef2fa;
+    --ui-ink-2: #c3cada;
+    --ui-ink-3: #8f9ab0;
+    --ui-line: rgb(238 242 250 / 0.14);
+    --ui-line-2: rgb(238 242 250 / 0.3);
+    --ui-blue-soft: #0a2466;
+    --ui-strip: #02040a;
+    --ui-shadow: 3px 3px 0 #000;
+  }
+}
+.ui-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}

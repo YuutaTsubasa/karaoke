@@ -7,7 +7,7 @@
 - **OBS 播放器**：透明背景網頁，JOYSOUND 風格的兩行交替歌詞，逐字由左往右變色（描邊＋漸層），同時播放伴奏。
 - **控制台**：直播中切歌、播放暫停、跳轉、音量、歌詞偏移、佇列、記錄唱過；可以放進 OBS 的停駐視窗用快捷鍵操作。
 
-技術：Svelte 5 + Vite，介面用 [bluebolt-ui](https://github.com/YuutaTsubasa/bluebolt-ui)（`v0.2.0`）。本機 API 掛在 Vite 伺服器上（`server/api.js`），只聽 `127.0.0.1`。
+技術：Svelte 5 + Vite，介面元件在 `src/lib/ui/`，字型來自 Fontsource。本機 API 掛在 Vite 伺服器上（`server/api.js`），只聽 `127.0.0.1`。
 
 ## 開始
 
@@ -27,8 +27,6 @@ npm start
 | 控制台 | http://127.0.0.1:5180/control.html |
 | 歌詞對時 | http://127.0.0.1:5180/timing.html |
 | OBS 播放器 | http://127.0.0.1:5180/player.html |
-
-`bluebolt-ui` 是私人 repo，`npm install` 前這台電腦要跑過一次 `gh auth setup-git`。
 
 ## 資料放哪裡
 
@@ -161,7 +159,7 @@ npm run demo
 
 ## 授權
 
-- 程式：私人專案（未授權給他人）。
+- 程式：[MIT](LICENSE)。
 - 字型：M PLUS Rounded 1c、Zen Maru Gothic、Noto Sans JP、Noto Sans TC 都是 **SIL Open Font License 1.1**（經由 Fontsource 套件），可商用、可用在直播。
 - 示範曲（`examples/demo`）：原創旋律與歌詞，CC0。
 - `library/` 裡的伴奏與歌詞屬於各自的權利人，不進 Git、不上傳。

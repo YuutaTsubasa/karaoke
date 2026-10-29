@@ -13,7 +13,7 @@ export const FONTS = {
 };
 
 export const THEMES = {
-  blue: { label: '藍（bluebolt）', fill: '#ffffff', stroke: '#0a1440', sungFill: 'linear-gradient(180deg, #9fc2ff 0%, #4a72ff 45%, #183dd6 100%)', sungSolid: '#3a62f0', sungStroke: '#ffffff' },
+  blue: { label: '藍', fill: '#ffffff', stroke: '#0a1440', sungFill: 'linear-gradient(180deg, #9fc2ff 0%, #4a72ff 45%, #183dd6 100%)', sungSolid: '#3a62f0', sungStroke: '#ffffff' },
   pink: { label: '粉', fill: '#ffffff', stroke: '#3a0a2a', sungFill: 'linear-gradient(180deg, #ffd0e6 0%, #ff6fae 50%, #e0267a 100%)', sungSolid: '#f0478f', sungStroke: '#ffffff' },
   yellow: { label: '黃', fill: '#ffffff', stroke: '#0b0f1a', sungFill: 'linear-gradient(180deg, #fff6b0 0%, #ffd21f 50%, #ff9d00 100%)', sungSolid: '#ffc400', sungStroke: '#0b0f1a' },
   classic: { label: '經典（白→藍，黑框）', fill: '#ffffff', stroke: '#000000', sungFill: 'linear-gradient(180deg, #6ad2ff 0%, #1b7cff 55%, #0b46c9 100%)', sungSolid: '#1b7cff', sungStroke: '#ffffff' },

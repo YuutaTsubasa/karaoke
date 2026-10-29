@@ -17,21 +17,21 @@
 <style>
   nav {
     display: flex;
-    gap: var(--bb-space-4);
+    gap: var(--ui-space-4);
     align-items: center;
-    padding: 10px var(--bb-space-4);
-    background: var(--bb-strip);
-    color: var(--bb-on-strip);
+    padding: 10px var(--ui-space-4);
+    background: var(--ui-strip);
+    color: var(--ui-on-strip);
   }
   .brand {
     font-weight: 700;
-    margin-right: var(--bb-space-4);
+    margin-right: var(--ui-space-4);
   }
   .brand b {
-    font-family: var(--bb-font-display);
+    font-family: var(--ui-font);
     font-weight: 400;
     letter-spacing: 0.04em;
-    color: var(--bb-yellow);
+    color: var(--ui-yellow);
   }
   a {
     color: inherit;
@@ -40,6 +40,6 @@
     border-bottom: 2px solid transparent;
   }
   a.current {
-    border-color: var(--bb-yellow);
+    border-color: var(--ui-yellow);
   }
 </style>
