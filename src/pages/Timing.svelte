@@ -365,7 +365,7 @@
                   onclick={() => jumpTo(l, i)}
                   title={s.start != null ? `${formatTime(s.start)} → ${s.end != null ? formatTime(s.end) : '?'}` : '未對時'}
                 >
-                  {#each s.parts as p}{#if p.ruby}<ruby>{p.base}<rt>{p.ruby}</rt></ruby>{:else}{p.base}{/if}{/each}
+                  <span class="txt">{#each s.parts as p}{#if p.ruby}<ruby>{p.base}<rt>{p.ruby}</rt></ruby>{:else}{p.base}{/if}{/each}</span>
                   <small>{s.start != null ? s.start.toFixed(2) : '·'}</small>
                 </button>
               {/each}
