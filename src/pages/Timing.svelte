@@ -8,6 +8,7 @@
   import { Button, Segmented, Toaster, toast } from '../lib/ui/index.js';
   import Nav from '../lib/Nav.svelte';
   import KaraokeStage from '../lib/KaraokeStage.svelte';
+  import YouTubeRef from '../lib/YouTubeRef.svelte';
   import { api, clock } from '../lib/client.js';
   import { formatTime, lyricsToText, parseLyrics, partsToMarkup, serializeLrc, skeletonFromText } from '../lib/lyrics.js';
   import { stageVars } from '../lib/theme.js';
@@ -31,6 +32,9 @@
   let playing = $state(false);
   let dirty = $state(false);
   let listEl = $state();
+  let refUrl = $state('');
+  let refOffset = $state(0);
+  let refMix = $state('both');
   /** @type {HTMLAudioElement} */
   let audio;
 
@@ -70,6 +74,8 @@
     text = song.lyricsSource || (parsed && parsed.lines.length ? lyricsToText(parsed) : song.lyricsText || '');
     lines = merge(skeletonFromText(text), hasTiming ? parsed.lines : []);
     audio.src = song.audioUrl || '';
+    refUrl = song.reference?.url || '';
+    refOffset = Number(song.reference?.offset || 0);
     time = 0;
     ptr = firstUntimed();
     dirty = false;
@@ -209,6 +215,8 @@
       const full = await api.song(song.id);
       delete full.lyricsText;
       full.lyricsSource = text;
+      if (refUrl.trim()) full.reference = { url: refUrl.trim(), offset: refOffset };
+      else delete full.reference;
       if (!timedLines.length && !full.hasLyrics) full.lyrics = 'lyrics.lrc';
       await api.save(full);
       dirty = false;
@@ -338,6 +346,11 @@
         </section>
       </div>
 
+      <div>
+      <section class="card">
+        <h2>參考影片</h2>
+        <YouTubeRef {audio} bind:url={refUrl} bind:offset={refOffset} bind:mix={refMix} />
+      </section>
       <section class="card text">
         <h2>歌詞文字</h2>
         <textarea rows="14" bind:value={text} oninput={() => (dirty = true)} spellcheck="false"></textarea>
@@ -347,6 +360,7 @@
         </p>
         <Button size="sm" variant="ink" onclick={applyText}>套用文字（已打的點會保留）</Button>
       </section>
+      </div>
     </div>
 
     <section class="card">
