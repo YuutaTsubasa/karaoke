@@ -1,0 +1,14 @@
+{
+  "title": "青い風（示範曲）",
+  "artist": "悠太翼",
+  "lyricist": "悠太翼（示範）",
+  "composer": "make-demo.js",
+  "audio": "instrumental.wav",
+  "lyrics": "lyrics.lrc",
+  "offset": 0,
+  "volume": 0.8,
+  "tags": ["demo"],
+  "notes": "原創示範曲（CC0）。伴奏由 scripts/make-demo.js 合成，歌詞時間碼與音符完全對齊，用來測試播放器。",
+  "performances": [],
+  "createdAt": "2026-10-29"
+}

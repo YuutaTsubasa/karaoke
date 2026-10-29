@@ -1,0 +1,108 @@
+/* Shared layout for the library, control and timing pages (bluebolt-ui tokens). */
+body {
+  margin: 0;
+  background: var(--bb-paper);
+  color: var(--bb-ink);
+  font-family: var(--bb-font-zh);
+}
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--bb-space-5) var(--bb-space-4) var(--bb-space-7);
+}
+.card {
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-line);
+  padding: var(--bb-space-4);
+  margin-bottom: var(--bb-space-4);
+}
+.card h2 {
+  margin: 0 0 var(--bb-space-3);
+  font-size: var(--bb-text-lg);
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bb-space-2);
+  align-items: center;
+}
+.grow {
+  flex: 1;
+}
+.muted {
+  color: var(--bb-ink-3);
+  font-size: var(--bb-text-sm);
+}
+label.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--bb-text-sm);
+  color: var(--bb-ink-2);
+}
+input[type='text'],
+input[type='search'],
+input[type='number'],
+input[type='date'],
+input[type='url'],
+select,
+textarea {
+  font: inherit;
+  font-size: var(--bb-text-md);
+  color: var(--bb-ink);
+  background: var(--bb-paper);
+  border: 1px solid var(--bb-line-2);
+  border-radius: var(--bb-radius);
+  padding: 6px 8px;
+  min-width: 0;
+}
+textarea {
+  font-family: var(--bb-font-mono), var(--bb-font-zh);
+  width: 100%;
+  box-sizing: border-box;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--bb-blue);
+  outline-offset: 1px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+th,
+td {
+  text-align: left;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--bb-line);
+  vertical-align: middle;
+}
+th {
+  font-size: var(--bb-text-sm);
+  color: var(--bb-ink-3);
+  font-weight: 600;
+}
+kbd {
+  font-family: var(--bb-font-mono);
+  font-size: 0.8em;
+  padding: 1px 5px;
+  border: 1px solid var(--bb-line-2);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: var(--bb-surface);
+}
+.ok {
+  color: #138a3e;
+}
+.bad {
+  color: #c0322b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .ok {
+    color: #4fd17e;
+  }
+  :root:not([data-theme='light']) .bad {
+    color: #ff7a70;
+  }
+}
