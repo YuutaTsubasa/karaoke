@@ -75,7 +75,7 @@ Karaoke/            ← 你的曲庫（伴奏與有版權的歌詞，不要放�
 | 參數 | 值 | 說明 |
 | --- | --- | --- |
 | `theme` | `blue`（預設）／`pink`／`yellow`／`classic` | 配色 |
-| `font` | `rounded`（M PLUS Rounded 1c，預設）／`maru`（Zen Maru Gothic）／`gothic`（Noto Sans JP） | 字型 |
+| `font` | `rounded`（M PLUS Rounded 1c，預設）／`maru`（Zen Maru Gothic）／`gothic`（Noto Sans JP）／`serif`（Noto Serif JP）／`mincho`（Shippori Mincho B1） | 字型 |
 | `size` | 數字，畫面高度的 %（預設 8） | 字級 |
 | `bottom` | 數字，畫面高度的 %（預設 6） | 歌詞離底部 |
 | `song` | 歌曲 id（資料夾名） | 開啟時先載入 |
@@ -170,6 +170,6 @@ npm run build
 ## 授權
 
 - 程式：[MIT](LICENSE)。桌面殼用 [MyGo](https://github.com/egoist/mygo)（MIT）。
-- 字型：M PLUS Rounded 1c、Zen Maru Gothic、Noto Sans JP、Noto Sans TC 都是 **SIL Open Font License 1.1**（經由 Fontsource 套件），可商用、可用在直播。
+- 字型：M PLUS Rounded 1c、Zen Maru Gothic、Noto Sans JP、Noto Sans TC、Noto Serif JP、Noto Serif TC、Shippori Mincho B1 都是 **SIL Open Font License 1.1**（經由 Fontsource 套件），可商用、可用在直播。
 - 示範曲（`examples/demo`）：原創旋律與歌詞，CC0。
 - `library/` 裡的伴奏與歌詞屬於各自的權利人，不進 Git、不上傳。
