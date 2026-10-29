@@ -9,6 +9,7 @@
 //	DELETE /api/songs/:id                move the song folder to <library>/.trash
 //	PUT    /api/songs/:id/lyrics?name=x  save lyrics text (body = text)
 //	PUT    /api/songs/:id/audio?name=x   upload instrumental (body = file)
+//	PUT    /api/songs/:id/reference?name=x  upload a reference recording for timing (body = file)
 //	GET    /media/:id/:file              audio with Range support
 //	GET    /api/events?role=player|control   server-sent events
 //	POST   /api/command  { action, ... }     forwarded to players
@@ -378,10 +379,16 @@ func (s *Server) view(sg song) (map[string]any, error) {
 	if audio != "" {
 		m["audioUrl"] = "/media/" + pathEscape(sg.ID) + "/" + pathEscape(audio)
 	}
+	m["referenceAudioUrl"] = nil
+	if ref, _ := m["reference"].(map[string]any); ref != nil {
+		if file := str(ref, "file"); file != "" && s.exists(sg, file) {
+			m["referenceAudioUrl"] = "/media/" + pathEscape(sg.ID) + "/" + pathEscape(file)
+		}
+	}
 	return m, nil
 }
 
-var computed = []string{"id", "source", "hasLyrics", "hasAudio", "audioUrl", "lyricsText"}
+var computed = []string{"id", "source", "hasLyrics", "hasAudio", "audioUrl", "referenceAudioUrl", "lyricsText"}
 
 func (s *Server) songs(w http.ResponseWriter, r *http.Request, rest []string) {
 	if len(rest) == 0 {
@@ -510,7 +517,7 @@ func (s *Server) songs(w http.ResponseWriter, r *http.Request, rest []string) {
 		}
 		s.sendView(w, sg)
 
-	case len(rest) == 2 && rest[1] == "audio" && r.Method == http.MethodPut:
+	case len(rest) == 2 && (rest[1] == "audio" || rest[1] == "reference") && r.Method == http.MethodPut:
 		if !writable() {
 			return
 		}
@@ -519,6 +526,9 @@ func (s *Server) songs(w http.ResponseWriter, r *http.Request, rest []string) {
 			name = "instrumental.mp3"
 		}
 		name, err := safeName(name)
+		if err == nil && rest[1] == "reference" {
+			name = "reference-" + name // never overwrite the instrumental
+		}
 		if err != nil {
 			sendError(w, http.StatusBadRequest, err.Error())
 			return
@@ -547,7 +557,20 @@ func (s *Server) songs(w http.ResponseWriter, r *http.Request, rest []string) {
 		}
 		m, err := s.readMeta(sg)
 		if err == nil {
-			m["audio"] = name
+			if rest[1] == "audio" {
+				m["audio"] = name
+			} else {
+				ref, _ := m["reference"].(map[string]any)
+				if ref == nil {
+					ref = map[string]any{}
+				}
+				if old := str(ref, "file"); old != "" && old != name {
+					os.Remove(filepath.Join(sg.Dir, old))
+				}
+				ref["file"] = name
+				ref["source"] = "file"
+				m["reference"] = ref
+			}
 			err = writeJSON(filepath.Join(sg.Dir, "song.json"), m)
 		}
 		if err != nil {

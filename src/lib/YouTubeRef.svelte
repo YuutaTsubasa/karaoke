@@ -5,7 +5,7 @@
   // `offset` = how many seconds later the song starts in the video than in the audio.
 
   /** @type {{ audio: HTMLAudioElement, url?: string, offset?: number, mix?: 'both' | 'reference' | 'instrumental' }} */
-  let { audio, url = $bindable(''), offset = $bindable(0), mix = $bindable('both') } = $props();
+  let { audio, url = $bindable(''), offset = 0, mix = 'both' } = $props();
 
   let host = $state();
   let player = null;
@@ -130,24 +130,6 @@
   {#if videoId}
     <div class="video" bind:this={host}></div>
     {#if error}<p class="bad">{error}</p>{/if}
-    <div class="row controls">
-      <label class="field inline"
-        >聲音
-        <select bind:value={mix}>
-          <option value="both">伴奏＋參考影片</option>
-          <option value="reference">只聽參考影片</option>
-          <option value="instrumental">只聽伴奏</option>
-        </select>
-      </label>
-      <span class="muted">參考影片比伴奏晚 {Number(offset).toFixed(2)} 秒</span>
-      <button class="mini" onclick={() => (offset = +(offset - 0.5).toFixed(2))}>−0.5</button>
-      <button class="mini" onclick={() => (offset = +(offset - 0.05).toFixed(2))}>−0.05</button>
-      <button class="mini" onclick={() => (offset = +(offset + 0.05).toFixed(2))}>＋0.05</button>
-      <button class="mini" onclick={() => (offset = +(offset + 0.5).toFixed(2))}>＋0.5</button>
-    </div>
-    <p class="muted">
-      影片會跟著伴奏播放、暫停、跳轉與變速。先選「伴奏＋參考影片」，調偏移到兩邊的節拍重疊，再開始打點。
-    </p>
   {:else if url}
     <p class="bad">看不懂這個網址，請貼 YouTube 影片網址。</p>
   {/if}
@@ -168,23 +150,6 @@
     height: 100%;
     border: 0;
     display: block;
-  }
-  .controls {
-    gap: 6px;
-  }
-  .field.inline {
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-  }
-  .mini {
-    padding: 2px 6px;
-    font: inherit;
-    font-size: var(--ui-text-sm);
-    border: 1px solid var(--ui-line-2);
-    background: var(--ui-surface);
-    color: var(--ui-ink-2);
-    cursor: pointer;
   }
   p {
     margin: 0;

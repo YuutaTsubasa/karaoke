@@ -78,6 +78,13 @@ func TestSongLifecycle(t *testing.T) {
 	if res.StatusCode != 400 {
 		t.Fatalf("bad audio name accepted: %d %s", res.StatusCode, body)
 	}
+	res, body = do(t, "PUT", ts.URL+"/api/songs/"+id+"/reference?name=inst.mp3", "VOCAL")
+	if res.StatusCode != 200 || !strings.Contains(body, `"referenceAudioUrl":"/media/`) || !strings.Contains(body, `"audio":"inst.mp3"`) {
+		t.Fatalf("reference: %d %s", res.StatusCode, body)
+	}
+	if b, _ := os.ReadFile(filepath.Join(s.Library(), id, "inst.mp3")); string(b) != "MP3DATA" {
+		t.Fatalf("reference upload overwrote the instrumental: %q", b)
+	}
 	res, _ = do(t, "PUT", ts.URL+"/api/songs/"+id+"/audio?name=x.exe", "x")
 	if res.StatusCode != 400 {
 		t.Fatalf("non-audio accepted: %d", res.StatusCode)
