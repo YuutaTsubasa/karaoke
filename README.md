@@ -38,7 +38,7 @@ Karaoke/            ← 你的曲庫（伴奏與有版權的歌詞，不要放�
   .trash/           ← 刪除的歌移到這裡，可以手動救回
 ```
 
-示範曲（原創，CC0）包在程式裡，唯讀。歌詞存檔前會留一份 `.bak`。
+歌詞存檔前會留一份 `.bak`。
 
 ## 新增一首歌
 
@@ -166,7 +166,7 @@ npm run build
 ```
 
 - `npm test`：歌詞解析、序列化、音節切分、排版時序（`tests/`，Node）與伺服器 API（`internal/server`，Go）。
-- `npm run build`：產生示範曲伴奏 → `vite build` → `go tool mygo build`，輸出 `build/windows-amd64/` 的 `Karaoke.exe` 與安裝檔。其他平台：`npm run build -- -platform windows/arm64`。
+- `npm run build`：`vite build` → `go tool mygo build`，輸出 `build/windows-amd64/` 的 `Karaoke.exe` 與安裝檔。其他平台：`npm run build -- -platform windows/arm64`。
 - `npm run demo`：重新產生示範曲（`scripts/make-demo.js`，旋律與歌詞時間碼由同一份資料產生，所以完全對齊）。
 - 圖示：`internal/icon` 畫的，`go run ./scripts/icon` 重新輸出 `resources/icon.png`。
 - `main.go` 桌面殼與系統匣；`internal/server` API；`src/lib/lyrics.js` 歌詞格式；`src/lib/schedule.js` 兩行排版；`src/lib/KaraokeLine.svelte` 逐字變色；`src/lib/theme.js` 配色字型。
@@ -176,5 +176,5 @@ npm run build
 
 - 程式：[MIT](LICENSE)。桌面殼用 [MyGo](https://github.com/egoist/mygo)（MIT）。
 - 字型：M PLUS Rounded 1c、Zen Maru Gothic、Noto Sans JP、Noto Sans TC、Noto Serif JP、Noto Serif TC、Shippori Mincho B1 都是 **SIL Open Font License 1.1**（經由 Fontsource 套件），可商用、可用在直播。
-- 示範曲（`examples/demo`）：原創旋律與歌詞，CC0。
+- 示範曲（`examples/demo`，只在 `npm run dev` 出現，不包進 App）：原創旋律與歌詞，CC0。
 - `library/` 裡的伴奏與歌詞屬於各自的權利人，不進 Git、不上傳。

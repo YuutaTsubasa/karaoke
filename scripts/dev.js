@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import { buildDemo } from './make-demo.js';
 
-buildDemo(); // examples/demo/instrumental.wav, embedded by the Go server
+buildDemo(); // examples/demo: a test song shown in development only
 fs.mkdirSync('dist', { recursive: true });
 if (!fs.readdirSync('dist').length) fs.writeFileSync('dist/.keep', ''); // go:embed needs a file there
 

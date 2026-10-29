@@ -29,9 +29,6 @@ import (
 //go:embed all:dist
 var dist embed.FS
 
-//go:embed all:examples
-var examples embed.FS
-
 const defaultPort = 5180
 
 type config struct {
@@ -178,12 +175,12 @@ func runApp(libFlag string, portFlag int) {
 }
 
 func newServer(lib string) (*server.Server, error) {
-	return server.New(server.Options{Library: lib, Examples: examplesFS(), Web: webFS(), Version: mygo.App.Version()})
+	return server.New(server.Options{Library: lib, Web: webFS(), Version: mygo.App.Version()})
 }
 
 // start is the -serve mode: no window, fail loudly.
 func start(lib string, port int, web bool) (*server.Server, net.Listener) {
-	opts := server.Options{Library: lib, Examples: examplesFS(), Version: "dev"}
+	opts := server.Options{Library: lib, Examples: os.DirFS("examples"), Version: "dev"} // the demo song, for development only
 	if web {
 		opts.Web = webFS()
 	}
@@ -203,11 +200,6 @@ func webFS() fs.FS {
 	if _, err := fs.Stat(sub, "index.html"); err != nil {
 		return nil // built without the frontend (npm run dev serves it)
 	}
-	return sub
-}
-
-func examplesFS() fs.FS {
-	sub, _ := fs.Sub(examples, "examples")
 	return sub
 }
 
