@@ -7,21 +7,18 @@
 - **OBS 播放器**：透明背景網頁，JOYSOUND 風格的兩行交替歌詞，逐字由左往右變色（描邊＋漸層），同時播放伴奏。
 - **控制台**：直播中切歌、播放暫停、跳轉、音量、歌詞偏移、佇列、記錄唱過；可以放進 OBS 的停駐視窗用快捷鍵操作。
 
-技術：Svelte 5 + Vite，介面元件在 `src/lib/ui/`，字型來自 Fontsource。本機 API 掛在 Vite 伺服器上（`server/api.js`），只聽 `127.0.0.1`。
+技術：桌面殼是 Go + [MyGo](https://mygo.egoist.dev/)（Windows 用內建的 WebView2），本機伺服器也是 Go（`internal/server`，只聽 `127.0.0.1`）；頁面是 Svelte 5 + Vite，介面元件在 `src/lib/ui/`，字型來自 Fontsource。
 
-## 開始
+## 安裝與開啟
 
-```bash
-npm install
-```
+用 `npm run build` 建出 `build/windows-amd64/karaoke-setup-<版本>-amd64.exe` 安裝（之後會放到 [Releases](https://github.com/YuutaTsubasa/karaoke/releases)），或直接執行同一個資料夾的 `Karaoke.exe`。之後從開始選單開「歌回 Karaoke」：
 
-```bash
-npm start
-```
+- 視窗裡是曲庫、控制台、歌詞對時三頁。
+- 右下角系統匣有圖示：**關掉視窗不會結束**，伺服器繼續在背景跑，OBS 照樣有歌詞；要結束從系統匣選「結束」。
+- 系統匣選單：開各頁、播放／暫停、複製 OBS 網址、打開／變更曲庫資料夾、開機時自動啟動。
+- 再開一次程式只會把原本的視窗叫出來。
 
-打開 http://127.0.0.1:5180 。第一次啟動會產生示範曲的伴奏（`examples/demo/instrumental.wav`）。
-
-| 頁面 | 網址 |
+| 頁面 | 網址（App 開著時，瀏覽器也能開） |
 | --- | --- |
 | 曲庫 | http://127.0.0.1:5180/ |
 | 控制台 | http://127.0.0.1:5180/control.html |
@@ -30,16 +27,18 @@ npm start
 
 ## 資料放哪裡
 
+曲庫預設在「文件Karaoke」，系統匣的「變更曲庫資料夾…」可以換（設定存在 `%APPDATA%Karaokeconfig.json`）：
+
 ```
-library/            ← 不進 Git（伴奏與有版權的歌詞）
+Karaoke/            ← 你的曲庫（伴奏與有版權的歌詞，不要放進 Git）
   <歌名>/
     song.json       ← 歌曲資料與唱過的場次
     instrumental.mp3
     lyrics.lrc
-examples/demo/      ← 示範曲（原創，CC0），歌詞與 song.json 進 Git，wav 由腳本產生
+  .trash/           ← 刪除的歌移到這裡，可以手動救回
 ```
 
-想把曲庫放在別的地方（例如 `Data\20_Assets`）就設環境變數 `KARAOKE_LIBRARY` 指向那個資料夾再 `npm start`。刪除歌曲會把資料夾移到 `library/.trash/`，不會直接刪掉；歌詞存檔前會留一份 `.bak`。
+示範曲（原創，CC0）包在程式裡，唯讀。歌詞存檔前會留一份 `.bak`。
 
 ## 新增一首歌
 
@@ -141,6 +140,18 @@ http://127.0.0.1:5180/api/command?action=load&id=<歌曲id>&autoplay=1
 
 ## 開發
 
+需要 Node.js 24、Go 1.27 以上（MyGo 的要求）。
+
+```bash
+npm install
+```
+
+```bash
+npm run dev
+```
+
+`npm run dev` 同時開 Go 伺服器（只有 API，:5181，曲庫用專案的 `library/`）與 Vite（:5180，代理 `/api`、`/media` 到 Go），改頁面會即時更新；OBS 和瀏覽器一樣連 :5180。開發時不要同時開著安裝版的 App（兩個都要用 5180）。
+
 ```bash
 npm test
 ```
@@ -149,17 +160,16 @@ npm test
 npm run build
 ```
 
-```bash
-npm run demo
-```
-
-- `npm test`：歌詞解析、序列化、音節切分、排版時序的單元測試（`tests/`）。
+- `npm test`：歌詞解析、序列化、音節切分、排版時序（`tests/`，Node）與伺服器 API（`internal/server`，Go）。
+- `npm run build`：產生示範曲伴奏 → `vite build` → `go tool mygo build`，輸出 `build/windows-amd64/` 的 `Karaoke.exe` 與安裝檔。其他平台：`npm run build -- -platform windows/arm64`。
 - `npm run demo`：重新產生示範曲（`scripts/make-demo.js`，旋律與歌詞時間碼由同一份資料產生，所以完全對齊）。
-- `src/lib/lyrics.js` 格式；`src/lib/schedule.js` 兩行排版；`src/lib/KaraokeLine.svelte` 逐字變色；`src/lib/theme.js` 配色字型。
+- 圖示：`internal/icon` 畫的，`go run ./scripts/icon` 重新輸出 `resources/icon.png`。
+- `main.go` 桌面殼與系統匣；`internal/server` API；`src/lib/lyrics.js` 歌詞格式；`src/lib/schedule.js` 兩行排版；`src/lib/KaraokeLine.svelte` 逐字變色；`src/lib/theme.js` 配色字型。
+- 不開視窗只跑伺服器：`go run . -serve`（`-port`、`-library`）。
 
 ## 授權
 
-- 程式：[MIT](LICENSE)。
+- 程式：[MIT](LICENSE)。桌面殼用 [MyGo](https://github.com/egoist/mygo)（MIT）。
 - 字型：M PLUS Rounded 1c、Zen Maru Gothic、Noto Sans JP、Noto Sans TC 都是 **SIL Open Font License 1.1**（經由 Fontsource 套件），可商用、可用在直播。
 - 示範曲（`examples/demo`）：原創旋律與歌詞，CC0。
 - `library/` 裡的伴奏與歌詞屬於各自的權利人，不進 Git、不上傳。
