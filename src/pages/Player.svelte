@@ -20,6 +20,7 @@
   let bottom = $state(params.has('bottom') ? Number(params.get('bottom')) : null);
   const preview = params.get('bg') === '1';
   const titleCard = params.get('title') !== '0';
+  const wrap = params.get('wrap') !== '0';
 
   let song = $state(null);
   let lyrics = $state(null);
@@ -200,7 +201,7 @@
 ></audio>
 
 <main class:preview style={stageVars({ theme, font, size, bottom })}>
-  <KaraokeStage {lyrics} time={lyricTime} {song} {showLyrics} {titleCard} />
+  <KaraokeStage {lyrics} time={lyricTime} {song} {showLyrics} {titleCard} {wrap} />
   {#if blocked}
     <button class="unlock" onclick={play}>按一下開始播放（瀏覽器擋住了自動播放；OBS 裡不會出現）</button>
   {/if}

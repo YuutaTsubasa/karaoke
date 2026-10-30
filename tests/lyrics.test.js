@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { lineText, lyricsToText, parseLyrics, parseRuby, serializeLrc, skeletonFromText, splitSyllables } from '../src/lib/lyrics.js';
-import { schedule } from '../src/lib/schedule.js';
+import { schedule, wrapLines } from '../src/lib/schedule.js';
 
 test('ruby: group and mono', () => {
   assert.deepEqual(parseRuby('{明日|あした}も'), [
@@ -101,4 +101,17 @@ test('schedule alternates rows and resets after a break', () => {
     const rows = plan.filter((p) => t >= p.show && t < p.hide).map((p) => p.row);
     assert.equal(new Set(rows).size, rows.length, `overlap at ${t}`);
   }
+});
+
+test('long lines split at a phrase break near the middle', () => {
+  const [line] = skeletonFromText('{君|きみ}の{手|て}は　どうしてこんなにも{温|あたた}かいの？');
+  line.syllables.forEach((s, i) => Object.assign(s, { start: i, end: i + 0.9 }));
+  const parts = wrapLines([line], 16);
+  assert.equal(parts.length, 2);
+  assert.equal(lineText(parts[0]), '君の手は');
+  assert.equal(lineText(parts[1]), 'どうしてこんなにも温かいの？');
+  assert.equal(parts[1].start, 4);
+  assert.equal(parts[0].end, parts[0].syllables.at(-1).end);
+  // short lines are left alone
+  assert.equal(wrapLines([line], 40)[0], line);
 });
