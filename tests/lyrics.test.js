@@ -124,4 +124,8 @@ test('long lines are never broken inside a phrase', () => {
   const [solid] = skeletonFromText('あなんて{美|うつく}しいんだろういつまでも');
   solid.syllables.forEach((s, i) => Object.assign(s, { start: i * 0.3, end: i * 0.3 + 0.3 }));
   assert.equal(wrapLines([solid], 8).length, 1);
+  // a short interjection is not split off on its own
+  const [aa] = skeletonFromText('あぁ　なんて{美|うつく}しいんだろう…');
+  aa.syllables.forEach((s, i) => Object.assign(s, { start: i * 0.3, end: i * 0.3 + 0.3 }));
+  assert.equal(wrapLines([aa], 11).length, 1);
 });

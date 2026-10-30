@@ -59,6 +59,11 @@ export function schedule(lines, opts = {}) {
 const HALF = /[\x20-\x7e｡-ﾟ]/;
 const PUNCT = /[、。，．,.！？!?…」』）)]\s*$/u;
 const SHRINK_OK = 1.12; // up to this much too wide, shrink a little rather than split
+// A piece split off a line must not be tiny: while it is sung, the other row can
+// only show what comes after it once the row above is free, so a two-character
+// piece leaves the singer looking at nothing new.
+const MIN_PIECE_EM = 4;
+const MIN_PIECE_SHARE = 0.2;
 
 function partWidth(p) {
   const w = (s) => [...s].reduce((n, c) => n + (HALF.test(c) ? 0.55 : 1), 0);
@@ -85,7 +90,8 @@ function lineOf(syllables, timed) {
 /**
  * Split lines wider than `maxEm` (in em of the lyric font) into several lines.
  * Only breaks at a space, punctuation or a clear pause in the singing, never inside
- * a phrase; a line slightly too wide, or with nowhere to break, is shrunk instead.
+ * a phrase, and never splits off a tiny piece; a line slightly too wide, or with
+ * no such break, is shrunk instead.
  * @param {import('./lyrics.js').Line[]} lines
  * @returns {import('./lyrics.js').Line[]}
  */
@@ -105,6 +111,7 @@ export function wrapLines(lines, maxEm) {
       const text = syl[k - 1].parts.map((p) => p.base).join('');
       const kind = /\s$/u.test(text) ? 0 : PUNCT.test(text) ? 0.3 : syl[k].start - syl[k - 1].end > 0.6 ? 0.6 : null;
       if (kind == null) continue;
+      if (Math.min(left, total - left) < Math.max(MIN_PIECE_EM, total * MIN_PIECE_SHARE)) continue;
       const balance = Math.abs(left - total / 2) / total;
       const overflow = Math.max(left, total - left) > maxEm * SHRINK_OK ? 0.4 : 0;
       const cost = balance + kind * 0.3 + overflow;
