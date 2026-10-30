@@ -1,5 +1,7 @@
 // Browser-side helpers for the local API.
 
+export const KEY_RANGE = 7; // key change limit, semitones each way
+
 async function json(res) {
   if (!res.ok) {
     let msg = `${res.status} ${res.statusText}`;

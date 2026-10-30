@@ -5,12 +5,13 @@
   //
   // URL options: song=<id> theme=blue|pink|yellow|classic font=rounded|maru|gothic
   //   size=<% of height> bottom=<% of height> bg=1 (dark preview background)
-  //   autoplay=1 (play `song` right away) title=0 (no title card)
+  //   autoplay=1 (play `song` right away) title=0 (no title card) wrap=0 (shrink long lines)
   import { onMount } from 'svelte';
   import KaraokeStage from '../lib/KaraokeStage.svelte';
   import { api, listen } from '../lib/client.js';
   import { parseLyrics } from '../lib/lyrics.js';
   import { stageVars } from '../lib/theme.js';
+  import { createTransposer } from '../lib/transpose.js';
 
   const params = new URLSearchParams(location.search);
   const opt = (k, d) => params.get(k) ?? d;
@@ -30,14 +31,17 @@
   let showLyrics = $state(true);
   let offset = $state(0); // live adjustment on top of song.offset (seconds, + = lyrics later)
   let volume = $state(1);
+  let key = $state(0); // semitones
+  let keyLatency = $state(0);
   let blocked = $state(false);
   let error = $state('');
 
   /** @type {HTMLAudioElement} */
   let audio;
   let lastPost = 0;
+  let transposer;
 
-  let lyricTime = $derived(time - (song?.offset || 0) - (lyrics?.offset || 0) - offset);
+  let lyricTime = $derived(time - keyLatency - (song?.offset || 0) - (lyrics?.offset || 0) - offset);
 
   async function load(id, { autoplay = false } = {}) {
     error = '';
@@ -50,6 +54,7 @@
       audio.src = s.audioUrl || '';
       audio.volume = Math.min(1, (s.volume ?? 1) * volume);
       if (!s.audioUrl) error = '這首歌還沒有伴奏音檔';
+      if (key || s.key) await setKey(s.key || 0);
       if (autoplay) await play();
       post(true);
     } catch (e) {
@@ -66,6 +71,16 @@
       if (e.name === 'NotAllowedError') blocked = true;
       else error = `無法播放：${e.message}`;
     }
+  }
+
+  async function setKey(value) {
+    try {
+      key = await transposer.set(value);
+      keyLatency = transposer.latency;
+    } catch (e) {
+      error = `無法變調：${e.message}`;
+    }
+    post(true);
   }
 
   function seek(t) {
@@ -93,6 +108,7 @@
       volume = Math.max(0, Math.min(1, Number(c.value)));
       audio.volume = Math.min(1, (song?.volume ?? 1) * volume);
     },
+    key: (c) => setKey(c.value != null ? Number(c.value) : key + Number(c.delta || 0)),
     offset: (c) => (offset = c.value != null ? Number(c.value) : offset + Number(c.delta || 0)),
     lyrics: (c) => (showLyrics = c.show == null ? !showLyrics : c.show === true || c.show === '1'),
     style: (c) => {
@@ -124,6 +140,7 @@
       playing,
       volume,
       offset,
+      key,
       showLyrics,
       blocked,
       error,
@@ -142,6 +159,8 @@
       KeyH: () => actions.lyrics({}),
       BracketLeft: () => actions.offset({ delta: -0.05 }),
       BracketRight: () => actions.offset({ delta: 0.05 }),
+      Minus: () => actions.key({ delta: -1 }),
+      Equal: () => actions.key({ delta: 1 }),
     };
     if (map[e.code]) {
       e.preventDefault();
@@ -151,6 +170,7 @@
   }
 
   onMount(() => {
+    transposer = createTransposer(audio);
     // Smooth clock: currentTime only advances in coarse steps in some browsers.
     let raf;
     let base = 0;

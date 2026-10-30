@@ -115,3 +115,13 @@ test('long lines split at a phrase break near the middle', () => {
   // short lines are left alone
   assert.equal(wrapLines([line], 40)[0], line);
 });
+
+test('long lines are never broken inside a phrase', () => {
+  const [line] = skeletonFromText('{僕|ぼく}のため　{君|きみ}のための　{涙|なみだ}を{流|なが}すよ');
+  line.syllables.forEach((s, i) => Object.assign(s, { start: i * 0.3, end: i * 0.3 + 0.3 }));
+  assert.deepEqual(wrapLines([line], 11).map(lineText), ['僕のため　君のための', '涙を流すよ']);
+  // no space, no pause: shrink instead of cutting a word
+  const [solid] = skeletonFromText('あなんて{美|うつく}しいんだろういつまでも');
+  solid.syllables.forEach((s, i) => Object.assign(s, { start: i * 0.3, end: i * 0.3 + 0.3 }));
+  assert.equal(wrapLines([solid], 8).length, 1);
+});

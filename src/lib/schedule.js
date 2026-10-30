@@ -58,6 +58,7 @@ export function schedule(lines, opts = {}) {
 
 const HALF = /[\x20-\x7e｡-ﾟ]/;
 const PUNCT = /[、。，．,.！？!?…」』）)]\s*$/u;
+const SHRINK_OK = 1.12; // up to this much too wide, shrink a little rather than split
 
 function partWidth(p) {
   const w = (s) => [...s].reduce((n, c) => n + (HALF.test(c) ? 0.55 : 1), 0);
@@ -83,6 +84,8 @@ function lineOf(syllables, timed) {
 
 /**
  * Split lines wider than `maxEm` (in em of the lyric font) into several lines.
+ * Only breaks at a space, punctuation or a clear pause in the singing, never inside
+ * a phrase; a line slightly too wide, or with nowhere to break, is shrunk instead.
  * @param {import('./lyrics.js').Line[]} lines
  * @returns {import('./lyrics.js').Line[]}
  */
@@ -93,17 +96,21 @@ export function wrapLines(lines, maxEm) {
     const syl = line.syllables;
     const widths = syl.map(syllableWidth);
     const total = widths.reduce((a, b) => a + b, 0);
-    if (total <= maxEm || syl.length < 2 || !line.timed) return out.push(line);
+    if (total <= maxEm * SHRINK_OK || syl.length < 2 || !line.timed) return out.push(line);
     let best = -1;
     let bestCost = Infinity;
     let left = 0;
     for (let k = 1; k < syl.length; k++) {
       left += widths[k - 1];
       const text = syl[k - 1].parts.map((p) => p.base).join('');
-      const kind = /\s$/u.test(text) ? 0 : PUNCT.test(text) ? 0.5 : syl[k].start - syl[k - 1].end > 0.25 ? 1 : 3;
-      const cost = Math.abs(left - total / 2) / total + kind * 0.15 + (Math.max(left, total - left) > maxEm ? 1 : 0);
+      const kind = /\s$/u.test(text) ? 0 : PUNCT.test(text) ? 0.3 : syl[k].start - syl[k - 1].end > 0.6 ? 0.6 : null;
+      if (kind == null) continue;
+      const balance = Math.abs(left - total / 2) / total;
+      const overflow = Math.max(left, total - left) > maxEm * SHRINK_OK ? 0.4 : 0;
+      const cost = balance + kind * 0.3 + overflow;
       if (cost < bestCost) [best, bestCost] = [k, cost];
     }
+    if (best < 0) return out.push(line);
     split(lineOf(syl.slice(0, best), true));
     split(lineOf(syl.slice(best), true));
   };

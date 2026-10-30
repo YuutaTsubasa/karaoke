@@ -5,7 +5,7 @@
 - **曲庫**：歌名、原唱、作詞作曲、標籤、伴奏音檔、歌詞檔、唱過的場次（日期、直播標題、網址）。
 - **歌詞對時**：邊播伴奏邊按鍵打點，逐字（音節）時間碼，日文漢字可以加注音（ruby）。
 - **OBS 播放器**：透明背景網頁，JOYSOUND 風格的兩行交替歌詞，逐字由左往右變色（描邊＋漸層），同時播放伴奏。
-- **控制台**：直播中切歌、播放暫停、跳轉、音量、歌詞偏移、佇列、記錄唱過；可以放進 OBS 的停駐視窗用快捷鍵操作。
+- **控制台**：直播中切歌、播放暫停、跳轉、音量、歌詞偏移、升降 Key、佇列、記錄唱過；可以放進 OBS 的停駐視窗用快捷鍵操作。
 
 技術：桌面殼是 Go + [MyGo](https://mygo.egoist.dev/)（Windows 用內建的 WebView2），本機伺服器也是 Go（`internal/server`，只聽 `127.0.0.1`）；頁面是 Svelte 5 + Vite，介面元件在 `src/lib/ui/`，字型來自 Fontsource。
 
@@ -99,6 +99,7 @@ Karaoke/            ← 你的曲庫（伴奏與有版權的歌詞，不要放�
 | <kbd>←</kbd> <kbd>→</kbd> | 倒退／快轉 5 秒 |
 | <kbd>↑</kbd> <kbd>↓</kbd> | 音量（控制台） |
 | <kbd>[</kbd> <kbd>]</kbd> | 歌詞提早／延後 0.05 秒（「存到這首歌」會寫進 `song.json` 的 `offset`） |
+| <kbd>-</kbd> <kbd>=</kbd> | 降／升 Key 半音，最多 ±7（只變音高不變速度；「存到這首歌」會寫進 `song.json` 的 `key`，下次載入自動套用） |
 | <kbd>R</kbd> | 從頭 |
 | <kbd>S</kbd> | 停止（控制台） |
 | <kbd>H</kbd> | 隱藏／顯示歌詞 |
@@ -114,7 +115,7 @@ http://127.0.0.1:5180/api/command?action=seekBy&delta=-5
 http://127.0.0.1:5180/api/command?action=load&id=<歌曲id>&autoplay=1
 ```
 
-指令：`load`（`id`、`autoplay`）、`play`、`pause`、`toggle`、`stop`、`restart`、`seek`（`time`）、`seekBy`（`delta`）、`volume`（`value` 0–1）、`offset`（`delta` 或 `value`）、`lyrics`（`show` 省略＝切換）、`style`（`theme`、`font`、`size`、`bottom`）、`unload`、`reload`。
+指令：`load`（`id`、`autoplay`）、`play`、`pause`、`toggle`、`stop`、`restart`、`seek`（`time`）、`seekBy`（`delta`）、`volume`（`value` 0–1）、`offset`（`delta` 或 `value`）、`key`（`delta` 或 `value`，半音）、`lyrics`（`show` 省略＝切換）、`style`（`theme`、`font`、`size`、`bottom`）、`unload`、`reload`。
 
 ## 歌詞格式
 
@@ -175,7 +176,7 @@ npm run build
 
 ## 授權
 
-- 程式：[MIT](LICENSE)。桌面殼用 [MyGo](https://github.com/egoist/mygo)（MIT）。
+- 程式：[MIT](LICENSE)。桌面殼用 [MyGo](https://github.com/egoist/mygo)（MIT）。升降 Key 用 [Signalsmith Stretch](https://signalsmith-audio.co.uk/code/stretch/)（MIT）。
 - 字型：M PLUS Rounded 1c、Zen Maru Gothic、Noto Sans JP、Noto Sans TC、Noto Serif JP、Noto Serif TC、Shippori Mincho B1 都是 **SIL Open Font License 1.1**（經由 Fontsource 套件），可商用、可用在直播。
 - 示範曲（`examples/demo`，只在 `npm run dev` 出現，不包進 App）：原創旋律與歌詞，CC0。
 - `library/` 裡的伴奏與歌詞屬於各自的權利人，不進 Git、不上傳。
