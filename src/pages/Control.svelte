@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { Button, StatusLamp, Toaster, toast } from '../lib/ui/index.js';
   import Nav from '../lib/Nav.svelte';
-  import { KEY_RANGE, api, clock, listen, today } from '../lib/client.js';
+  import { KEY_RANGE, api, clock, keyLabel, listen, today } from '../lib/client.js';
   import { FONTS, THEMES } from '../lib/theme.js';
 
   let songs = $state([]);
@@ -96,10 +96,10 @@
     delete full.lyricsText;
     full.key = status.key || 0;
     await api.save(full);
+    await refresh();
     toast({ title: '已存入歌曲設定', body: `下次載入這首歌時自動 ${keyLabel(full.key)}`, tone: 'success' });
   }
 
-  const keyLabel = (k) => (k > 0 ? `♯${k}` : k < 0 ? `♭${-k}` : '原調');
 
   function seekTo(e) {
     if (!status?.duration) return;
@@ -217,6 +217,7 @@
               <td class="muted nowrap">
                 {#if !s.hasAudio}<span class="bad">缺伴奏</span>{/if}
                 {#if !s.hasLyrics}<span class="bad">缺歌詞</span>{/if}
+                {#if s.key}<span class="key">{keyLabel(s.key)}</span>{/if}
                 {#if s.performances?.length}唱過 {s.performances.length} 次{/if}
               </td>
               <td class="nowrap actions">
@@ -328,6 +329,11 @@
   }
   tr.playing {
     background: var(--ui-blue-soft);
+  }
+  .key {
+    font-weight: 700;
+    color: var(--ui-blue);
+    margin-right: 6px;
   }
   .nowrap {
     white-space: nowrap;

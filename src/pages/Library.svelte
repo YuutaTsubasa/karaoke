@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { Button, ConfirmDialog, Toaster, toast } from '../lib/ui/index.js';
   import Nav from '../lib/Nav.svelte';
-  import { api, today } from '../lib/client.js';
+  import { KEY_RANGE, api, keyLabel, today } from '../lib/client.js';
   import { parseLyrics } from '../lib/lyrics.js';
 
   let songs = $state([]);
@@ -55,6 +55,7 @@
     delete s.tagsText;
     delete s.lyricsText;
     s.offset = Number(s.offset) || 0;
+    s.key = Math.max(-KEY_RANGE, Math.min(KEY_RANGE, Math.round(Number(s.key) || 0)));
     s.volume = Number(s.volume) || 1;
     s.performances = s.performances.filter((p) => p.date);
     try {
@@ -141,7 +142,7 @@
     </div>
     <table>
       <thead>
-        <tr><th>歌名</th><th>原唱</th><th>伴奏</th><th>歌詞</th><th>次數</th><th>最近</th><th></th></tr>
+        <tr><th>歌名</th><th>原唱</th><th>伴奏</th><th>歌詞</th><th>Key</th><th>次數</th><th>最近</th><th></th></tr>
       </thead>
       <tbody>
         {#each filtered as s (s.id)}
@@ -150,6 +151,7 @@
             <td>{s.artist}</td>
             <td>{#if s.hasAudio}<span class="ok">✓</span>{:else}<span class="bad">—</span>{/if}</td>
             <td>{#if s.hasLyrics}<span class="ok">✓</span> <span class="muted">{s.lyrics}</span>{:else}<span class="bad">—</span>{/if}</td>
+            <td class:muted={!s.key}>{keyLabel(s.key || 0)}</td>
             <td class="ui-num">{s.performances?.length || 0}</td>
             <td class="muted">{last(s)}</td>
             <td class="actions">
@@ -176,6 +178,7 @@
         <label class="field">作曲<input type="text" bind:value={editing.composer} /></label>
         <label class="field">標籤（逗號分隔）<input type="text" bind:value={editing.tagsText} /></label>
         <label class="field">歌詞偏移（秒，正數＝歌詞晚一點）<input type="number" step="0.01" bind:value={editing.offset} /></label>
+        <label class="field">Key（半音，負數＝降）<input type="number" step="1" min={-KEY_RANGE} max={KEY_RANGE} bind:value={editing.key} /></label>
         <label class="field">伴奏音量（0–1）<input type="number" step="0.05" min="0" max="1" bind:value={editing.volume} /></label>
       </div>
       <label class="field">備註<textarea rows="2" bind:value={editing.notes}></textarea></label>
