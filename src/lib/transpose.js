@@ -12,6 +12,7 @@ export function createTransposer(audio) {
   let source = null;
   let shifter = null;
   let semitones = 0;
+  let shifterLatency = 0;
   let starting = null;
 
   async function start() {
@@ -24,6 +25,8 @@ export function createTransposer(audio) {
       throw new Error('瀏覽器不允許這個頁面處理音訊（在播放器頁面點一下再試；OBS 裡不會有這個問題）');
     }
     shifter = await SignalsmithStretch(c);
+    // a call into the worklet, so it answers with a promise
+    shifterLatency = Number(await shifter.latency()) || 0;
     source = c.createMediaElementSource(audio);
     source.connect(c.destination);
     ctx = c;
@@ -35,7 +38,7 @@ export function createTransposer(audio) {
     },
     /** Seconds the shifted audio lags behind audio.currentTime. */
     get latency() {
-      return semitones && shifter ? shifter.latency() : 0;
+      return semitones ? shifterLatency : 0;
     },
     /** @param {number} value */
     async set(value) {

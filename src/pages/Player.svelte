@@ -76,7 +76,7 @@
   async function setKey(value) {
     try {
       key = await transposer.set(value);
-      keyLatency = transposer.latency;
+      keyLatency = Number.isFinite(transposer.latency) ? transposer.latency : 0;
     } catch (e) {
       error = `無法變調：${e.message}`;
     }
