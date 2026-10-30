@@ -4,7 +4,7 @@
   // fills whatever box it is put in (the OBS page, or a preview panel).
   import { fade, fly } from 'svelte/transition';
   import KaraokeLine from './KaraokeLine.svelte';
-  import { schedule } from './schedule.js';
+  import { schedule, wrapLines } from './schedule.js';
 
   /**
    * @type {{
@@ -13,11 +13,21 @@
    *   song?: { title?: string, artist?: string, lyricist?: string, composer?: string } | null,
    *   showLyrics?: boolean,
    *   titleCard?: boolean,
+   *   wrap?: boolean,
    * }}
    */
-  let { lyrics, time, song = null, showLyrics = true, titleCard = true } = $props();
+  let { lyrics, time, song = null, showLyrics = true, titleCard = true, wrap = true } = $props();
 
-  let lines = $derived(lyrics?.lines ?? []);
+  // how many em of lyric text fit in a row; longer lines are split in two
+  let rowEl = $state();
+  let rowWidth = $state(0);
+  let rowHeight = $state(0); // follows the font size (a row is 1.85em tall)
+  let maxEm = $derived.by(() => {
+    if (!wrap || !rowEl || !rowWidth || !rowHeight) return 0;
+    const px = parseFloat(getComputedStyle(rowEl).fontSize);
+    return px ? (rowWidth / px) * 0.94 : 0;
+  });
+  let lines = $derived(wrapLines(lyrics?.lines ?? [], maxEm));
   let plan = $derived(schedule(lines));
 
   let visible = $derived.by(() => {
@@ -51,17 +61,18 @@
     </div>
   {/if}
   <div class="rows">
-    {#each [0, 1] as row}
-      <div class="row row{row}">
-        {#each visible[row] as i (i)}
-          <div class="slot" in:fly={{ y: 12, duration: 220 }} out:fade={{ duration: 180 }}>
-            <KaraokeLine line={lines[i]} {time} align={row === 0 ? 'left' : 'right'} countdown={countdownFor(i)} />
-          </div>
-        {/each}
-      </div>
-    {/each}
+    <div class="row row0" bind:this={rowEl} bind:clientWidth={rowWidth} bind:clientHeight={rowHeight}>{@render rowLines(0)}</div>
+    <div class="row row1">{@render rowLines(1)}</div>
   </div>
 </div>
+
+{#snippet rowLines(row)}
+  {#each visible[row] as i (i)}
+    <div class="slot" in:fly={{ y: 12, duration: 220 }} out:fade={{ duration: 180 }}>
+      <KaraokeLine line={lines[i]} {time} align={row === 0 ? 'left' : 'right'} countdown={countdownFor(i)} />
+    </div>
+  {/each}
+{/snippet}
 
 <style>
   .stage {

@@ -8,6 +8,8 @@
   import { Button, Segmented, Toaster, toast } from '../lib/ui/index.js';
   import Nav from '../lib/Nav.svelte';
   import KaraokeStage from '../lib/KaraokeStage.svelte';
+  import YouTubeRef from '../lib/YouTubeRef.svelte';
+  import AudioRef from '../lib/AudioRef.svelte';
   import { api, clock } from '../lib/client.js';
   import { formatTime, lyricsToText, parseLyrics, partsToMarkup, serializeLrc, skeletonFromText } from '../lib/lyrics.js';
   import { stageVars } from '../lib/theme.js';
@@ -31,6 +33,11 @@
   let playing = $state(false);
   let dirty = $state(false);
   let listEl = $state();
+  let refUrl = $state('');
+  let refOffset = $state(0);
+  let refMix = $state('both');
+  let refSource = $state('none');
+  let refAudioSrc = $state(null);
   /** @type {HTMLAudioElement} */
   let audio;
 
@@ -70,6 +77,10 @@
     text = song.lyricsSource || (parsed && parsed.lines.length ? lyricsToText(parsed) : song.lyricsText || '');
     lines = merge(skeletonFromText(text), hasTiming ? parsed.lines : []);
     audio.src = song.audioUrl || '';
+    refUrl = song.reference?.url || '';
+    refAudioSrc = song.referenceAudioUrl || null;
+    refSource = song.reference?.source || (refUrl ? 'youtube' : refAudioSrc ? 'file' : 'none');
+    refOffset = Number(song.reference?.offset || 0);
     time = 0;
     ptr = firstUntimed();
     dirty = false;
@@ -209,6 +220,7 @@
       const full = await api.song(song.id);
       delete full.lyricsText;
       full.lyricsSource = text;
+      full.reference = { ...(full.reference || {}), url: refUrl.trim(), offset: refOffset, source: refSource };
       if (!timedLines.length && !full.hasLyrics) full.lyrics = 'lyrics.lrc';
       await api.save(full);
       dirty = false;
@@ -338,6 +350,42 @@
         </section>
       </div>
 
+      <div>
+      <section class="card">
+        <h2>參考音源</h2>
+        <Segmented
+          size="sm"
+          label="來源"
+          options={[
+            { value: 'none', label: '不用' },
+            { value: 'youtube', label: 'YouTube' },
+            { value: 'file', label: '本機音檔' },
+          ]}
+          bind:value={refSource}
+        />
+        {#if refSource === 'youtube'}
+          <YouTubeRef {audio} bind:url={refUrl} offset={refOffset} mix={refMix} />
+        {:else if refSource === 'file'}
+          <AudioRef {audio} songId={song.id} bind:src={refAudioSrc} offset={refOffset} mix={refMix} />
+        {/if}
+        {#if refSource !== 'none'}
+          <div class="row refctl">
+            <label class="field inline"
+              >聲音
+              <select bind:value={refMix}>
+                <option value="both">伴奏＋參考</option>
+                <option value="reference">只聽參考</option>
+                <option value="instrumental">只聽伴奏</option>
+              </select>
+            </label>
+            <span class="muted">參考比伴奏晚 {refOffset.toFixed(2)} 秒</span>
+            {#each [-0.5, -0.05, 0.05, 0.5] as d}
+              <button class="mini" onclick={() => ((refOffset = +(refOffset + d).toFixed(2)), (dirty = true))}>{d > 0 ? '＋' : '−'}{Math.abs(d)}</button>
+            {/each}
+          </div>
+          <p class="muted">參考會跟著伴奏播放、暫停、跳轉與變速。先選「伴奏＋參考」，調偏移到兩邊節拍重疊，再開始打點。</p>
+        {/if}
+      </section>
       <section class="card text">
         <h2>歌詞文字</h2>
         <textarea rows="14" bind:value={text} oninput={() => (dirty = true)} spellcheck="false"></textarea>
@@ -347,6 +395,7 @@
         </p>
         <Button size="sm" variant="ink" onclick={applyText}>套用文字（已打的點會保留）</Button>
       </section>
+      </div>
     </div>
 
     <section class="card">
@@ -365,7 +414,7 @@
                   onclick={() => jumpTo(l, i)}
                   title={s.start != null ? `${formatTime(s.start)} → ${s.end != null ? formatTime(s.end) : '?'}` : '未對時'}
                 >
-                  {#each s.parts as p}{#if p.ruby}<ruby>{p.base}<rt>{p.ruby}</rt></ruby>{:else}{p.base}{/if}{/each}
+                  <span class="txt">{#each s.parts as p}{#if p.ruby}<ruby>{p.base}<rt>{p.ruby}</rt></ruby>{:else}{p.base}{/if}{/each}</span>
                   <small>{s.start != null ? s.start.toFixed(2) : '·'}</small>
                 </button>
               {/each}
@@ -405,6 +454,14 @@
     background:
       radial-gradient(ellipse at 30% 20%, #2b3f8f 0%, transparent 60%),
       linear-gradient(160deg, #10183a, #05070c);
+  }
+  .refctl .mini {
+    width: auto;
+    padding: 2px 6px;
+  }
+  .refctl {
+    margin-top: var(--ui-space-2);
+    gap: 6px;
   }
   .seek {
     width: 100%;
