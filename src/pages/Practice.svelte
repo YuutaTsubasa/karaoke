@@ -528,6 +528,10 @@
 {/if}
 
 <style>
+  /* Always dark, whatever the device prefers: tokens.css says "light dark". */
+  :global(html:root) {
+    color-scheme: only dark;
+  }
   :global(html, body) {
     margin: 0;
     height: 100%;
