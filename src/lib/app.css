@@ -1,0 +1,108 @@
+/* Shared layout for the library, control and timing pages (tokens in ui/tokens.css). */
+body {
+  margin: 0;
+  background: var(--ui-paper);
+  color: var(--ui-ink);
+  font-family: var(--ui-font);
+}
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--ui-space-5) var(--ui-space-4) var(--ui-space-7);
+}
+.card {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-line);
+  padding: var(--ui-space-4);
+  margin-bottom: var(--ui-space-4);
+}
+.card h2 {
+  margin: 0 0 var(--ui-space-3);
+  font-size: var(--ui-text-lg);
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+  align-items: center;
+}
+.grow {
+  flex: 1;
+}
+.muted {
+  color: var(--ui-ink-3);
+  font-size: var(--ui-text-sm);
+}
+label.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--ui-text-sm);
+  color: var(--ui-ink-2);
+}
+input[type='text'],
+input[type='search'],
+input[type='number'],
+input[type='date'],
+input[type='url'],
+select,
+textarea {
+  font: inherit;
+  font-size: var(--ui-text-md);
+  color: var(--ui-ink);
+  background: var(--ui-paper);
+  border: 1px solid var(--ui-line-2);
+  border-radius: var(--ui-radius);
+  padding: 6px 8px;
+  min-width: 0;
+}
+textarea {
+  font-family: var(--ui-font-mono), var(--ui-font);
+  width: 100%;
+  box-sizing: border-box;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ui-blue);
+  outline-offset: 1px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+th,
+td {
+  text-align: left;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--ui-line);
+  vertical-align: middle;
+}
+th {
+  font-size: var(--ui-text-sm);
+  color: var(--ui-ink-3);
+  font-weight: 600;
+}
+kbd {
+  font-family: var(--ui-font-mono);
+  font-size: 0.8em;
+  padding: 1px 5px;
+  border: 1px solid var(--ui-line-2);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: var(--ui-surface);
+}
+.ok {
+  color: #138a3e;
+}
+.bad {
+  color: #c0322b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .ok {
+    color: #4fd17e;
+  }
+  :root:not([data-theme='light']) .bad {
+    color: #ff7a70;
+  }
+}
