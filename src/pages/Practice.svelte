@@ -130,8 +130,8 @@
     } catch {}
   }
 
-  async function putProfile(p) {
-    const res = await fetch(`/api/profiles/${encodeURIComponent(p.name)}`, { method: 'PUT', body: JSON.stringify(p) });
+  async function createProfile(p) {
+    const res = await fetch(`/api/profiles/${encodeURIComponent(p.name)}?create=1`, { method: 'PUT', body: JSON.stringify(p) });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
     const saved = await res.json();
     profiles = profiles.some((x) => x.name === saved.name) ? profiles.map((x) => (x.name === saved.name ? saved : x)) : [...profiles, saved];
@@ -149,7 +149,7 @@
     const name = newName.trim();
     if (!name) return;
     try {
-      if (!profiles.some((p) => p.name === name)) await putProfile({ name, songs: [], keys: {} });
+      if (!profiles.some((p) => p.name === name)) await createProfile({ name, songs: [], keys: {} });
       newName = '';
       choose(name);
     } catch (e) {
@@ -167,11 +167,19 @@
     }
   }
 
+  // One change at a time (POST), applied by the server to the stored profile, so
+  // quick taps or another device never overwrite each other.
+  async function change(name, op) {
+    const res = await fetch(`/api/profiles/${encodeURIComponent(name)}`, { method: 'POST', body: JSON.stringify(op) });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+    const saved = await res.json();
+    profiles = profiles.map((x) => (x.name === saved.name ? saved : x));
+  }
+
   async function toggleStar(id) {
     if (!mine) return;
-    const list = mine.songs.includes(id) ? mine.songs.filter((x) => x !== id) : [...mine.songs, id];
     try {
-      await putProfile({ ...mine, songs: list });
+      await change(mine.name, mine.songs.includes(id) ? { remove: id } : { add: id });
     } catch (e) {
       error = `無法存歌單：${e.message}`;
     }
@@ -182,15 +190,10 @@
   function rememberKey() {
     if (!mine || !song) return;
     clearTimeout(keyTimer);
+    const name = mine.name;
     const id = song.id;
-    const value = key;
-    const songKey = song.key || 0;
-    keyTimer = setTimeout(() => {
-      const keys = { ...mine.keys };
-      if (value === songKey) delete keys[id];
-      else keys[id] = value;
-      putProfile({ ...mine, keys }).catch(() => {});
-    }, 800);
+    const value = key === (song.key || 0) ? null : key;
+    keyTimer = setTimeout(() => change(name, { song: id, key: value }).catch(() => {}), 800);
   }
 
   async function open(id, push = true) {
@@ -317,11 +320,11 @@
     transposer = createTransposer(audio);
     const stop = smoothClock(audio, (t) => (time = t));
     loadList();
-    loadProfiles();
+    const ready = loadProfiles();
     const id = new URLSearchParams(location.search).get('song');
     if (id) {
       history.replaceState({ song: id }, '', location.href);
-      open(id, false);
+      ready.then(() => open(id, false)); // after the profiles, for this person's key
     }
     const onPop = () => {
       const id = history.state?.song;

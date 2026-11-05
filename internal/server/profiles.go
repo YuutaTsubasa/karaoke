@@ -6,6 +6,7 @@ package server
 //
 //	GET    /api/profiles          { profiles: [{ name, songs: [id], keys: { id: n } }] }
 //	PUT    /api/profiles/:name    create or replace { songs, keys }
+//	POST   /api/profiles/:name    one change: { add: id } | { remove: id } | { song: id, key: n | null }
 //	DELETE /api/profiles/:name
 //	GET    /api/practice          { https: port or 0, ca: bool } for the practice page
 //	GET    /ca.crt                the practice server's CA certificate, to install on devices
@@ -115,6 +116,10 @@ func (s *Server) handleProfiles(w http.ResponseWriter, r *http.Request, rest []s
 	}
 	switch r.Method {
 	case http.MethodPut:
+		if idx >= 0 && r.URL.Query().Get("create") == "1" {
+			sendJSON(w, http.StatusOK, pf.Profiles[idx]) // someone made it meanwhile: keep theirs
+			return
+		}
 		var p profile
 		if err := json.NewDecoder(io.LimitReader(r.Body, 256<<10)).Decode(&p); err != nil {
 			sendError(w, http.StatusBadRequest, "invalid json")
@@ -157,6 +162,67 @@ func (s *Server) handleProfiles(w http.ResponseWriter, r *http.Request, rest []s
 			return
 		}
 		sendJSON(w, http.StatusOK, p)
+	case http.MethodPost:
+		// One change at a time, applied to the stored profile, so two quick taps
+		// or two devices never overwrite each other's songs or keys.
+		var op struct {
+			Add    string `json:"add"`
+			Remove string `json:"remove"`
+			Song   string `json:"song"`
+			Key    *int   `json:"key"` // with song; null = back to the song's own key
+		}
+		if err := json.NewDecoder(io.LimitReader(r.Body, 16<<10)).Decode(&op); err != nil {
+			sendError(w, http.StatusBadRequest, "invalid json")
+			return
+		}
+		if idx < 0 {
+			sendError(w, http.StatusNotFound, "no such profile")
+			return
+		}
+		p := &pf.Profiles[idx]
+		if p.Keys == nil {
+			p.Keys = map[string]int{}
+		}
+		for _, id := range []string{op.Add, op.Remove, op.Song} {
+			if len(id) > 200 {
+				sendError(w, http.StatusBadRequest, "bad song id")
+				return
+			}
+		}
+		switch {
+		case op.Add != "":
+			if !contains(p.Songs, op.Add) {
+				if len(p.Songs) >= maxProfileSongs {
+					sendError(w, http.StatusBadRequest, "too many songs")
+					return
+				}
+				p.Songs = append(p.Songs, op.Add)
+			}
+		case op.Remove != "":
+			out := p.Songs[:0]
+			for _, id := range p.Songs {
+				if id != op.Remove {
+					out = append(out, id)
+				}
+			}
+			p.Songs = out
+		case op.Song != "" && op.Key == nil:
+			delete(p.Keys, op.Song)
+		case op.Song != "":
+			if *op.Key < -maxKey || *op.Key > maxKey || (len(p.Keys) >= maxProfileSongs && p.Keys[op.Song] == 0) {
+				sendError(w, http.StatusBadRequest, "bad key")
+				return
+			}
+			p.Keys[op.Song] = *op.Key
+		default:
+			sendError(w, http.StatusBadRequest, "nothing to change")
+			return
+		}
+		if err := s.saveProfiles(pf); err != nil {
+			sendError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		sendJSON(w, http.StatusOK, *p)
 	case http.MethodDelete:
 		if idx < 0 {
 			sendError(w, http.StatusNotFound, "no such profile")
@@ -171,6 +237,15 @@ func (s *Server) handleProfiles(w http.ResponseWriter, r *http.Request, rest []s
 	default:
 		sendError(w, http.StatusMethodNotAllowed, "method not allowed")
 	}
+}
+
+func contains(list []string, v string) bool {
+	for _, x := range list {
+		if x == v {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Server) serveCA(w http.ResponseWriter, r *http.Request) {

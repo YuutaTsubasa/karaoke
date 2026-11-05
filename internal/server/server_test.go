@@ -301,6 +301,17 @@ func TestPracticeProfiles(t *testing.T) {
 			t.Fatalf("PUT %s %s: %d, want 400", c[0], c[1], res.StatusCode)
 		}
 	}
+	for _, op := range []string{`{"add":"b"}`, `{"add":"c"}`, `{"remove":"song"}`, `{"song":"b","key":2}`, `{"song":"song","key":null}`} {
+		if res, body := do(t, "POST", ts.URL+name, op); res.StatusCode != 200 {
+			t.Fatalf("POST %s: %d %s", op, res.StatusCode, body)
+		}
+	}
+	if _, body := do(t, "GET", ts.URL+"/api/profiles", ""); !strings.Contains(body, `"songs":["b","c"]`) || !strings.Contains(body, `"keys":{"b":2}`) {
+		t.Fatalf("after changes: %s", body)
+	}
+	if res, _ := do(t, "POST", ts.URL+"/api/profiles/nobody", `{"add":"x"}`); res.StatusCode != 404 {
+		t.Fatalf("change unknown profile: %d", res.StatusCode)
+	}
 	if res, _ := do(t, "DELETE", ts.URL+name, ""); res.StatusCode != 204 {
 		t.Fatalf("delete: %d", res.StatusCode)
 	}
