@@ -92,6 +92,11 @@ func validProfileName(name string) bool {
 }
 
 func (s *Server) handleProfiles(w http.ResponseWriter, r *http.Request, rest []string) {
+	if s.practice && s.profiles == "" {
+		// the default lives in the library, which a practice server never writes
+		sendError(w, http.StatusNotFound, "no profiles file (start the practice server with -profiles)")
+		return
+	}
 	s.profilesMu.Lock()
 	defer s.profilesMu.Unlock()
 	pf, err := s.loadProfiles()

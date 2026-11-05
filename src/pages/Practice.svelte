@@ -186,14 +186,22 @@
   }
 
   // A key the singer picks is remembered for them (the song's own saved key is the default).
-  let keyTimer;
+  // one pending save per person and song, so another song's save does not cancel it
+  const keyTimers = new Map();
   function rememberKey() {
     if (!mine || !song) return;
-    clearTimeout(keyTimer);
     const name = mine.name;
     const id = song.id;
     const value = key === (song.key || 0) ? null : key;
-    keyTimer = setTimeout(() => change(name, { song: id, key: value }).catch(() => {}), 800);
+    const slot = `${name}\n${id}`;
+    clearTimeout(keyTimers.get(slot));
+    keyTimers.set(
+      slot,
+      setTimeout(() => {
+        keyTimers.delete(slot);
+        change(name, { song: id, key: value }).catch(() => {});
+      }, 800),
+    );
   }
 
   async function open(id, push = true) {

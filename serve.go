@@ -69,6 +69,12 @@ func serve(f flags) {
 	}
 	cfg := loadConfig("")
 	lib := firstNonEmpty(f.library, os.Getenv("KARAOKE_LIBRARY"), cfg.Library, "library")
+	if f.practice && f.profiles == "" {
+		// outside the library, which a practice server never writes
+		if dir, err := os.UserConfigDir(); err == nil {
+			f.profiles = filepath.Join(dir, "KaraokePractice", "profiles.json")
+		}
+	}
 	opts := server.Options{Profiles: f.profiles, CACert: f.caCert}
 	if f.tlsCert != "" {
 		_, p, err := net.SplitHostPort(f.tlsAt)

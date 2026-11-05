@@ -208,6 +208,12 @@ func TestPracticeIsReadOnly(t *testing.T) {
 			t.Fatalf("%s %s: %d, want 403", c[0], c[1], res.StatusCode)
 		}
 	}
+	if res, _ := do(t, "PUT", ts.URL+"/api/profiles/a", `{}`); res.StatusCode != 404 {
+		t.Fatalf("profiles without -profiles: %d, want 404 (never write the library)", res.StatusCode)
+	}
+	if _, err := os.Stat(filepath.Join(lib, ".practice")); err == nil {
+		t.Fatal("practice server wrote into the library")
+	}
 	if _, err := os.Stat(filepath.Join(lib, "song", "song.json")); err != nil {
 		t.Fatal("song was touched: ", err)
 	}
