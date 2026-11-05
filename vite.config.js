@@ -23,6 +23,7 @@ export default defineConfig({
         player: 'player.html',
         control: 'control.html',
         timing: 'timing.html',
+        practice: 'practice.html',
       },
     },
   },

@@ -9,6 +9,7 @@
   import { onMount } from 'svelte';
   import KaraokeStage from '../lib/KaraokeStage.svelte';
   import { api, listen } from '../lib/client.js';
+  import { smoothClock } from '../lib/clock.js';
   import { parseLyrics } from '../lib/lyrics.js';
   import { stageVars } from '../lib/theme.js';
   import { createTransposer } from '../lib/transpose.js';
@@ -171,28 +172,10 @@
 
   onMount(() => {
     transposer = createTransposer(audio);
-    // Smooth clock: currentTime only advances in coarse steps in some browsers.
-    let raf;
-    let base = 0;
-    let stamp = 0;
-    const tick = () => {
-      if (!audio.paused) {
-        const ct = audio.currentTime;
-        const now = performance.now();
-        if (ct !== base) {
-          base = ct;
-          stamp = now;
-        }
-        time = Math.max(time, base + Math.min(0.25, (now - stamp) / 1000) * audio.playbackRate);
-        if (Math.abs(time - ct) > 0.3) time = ct;
-      } else {
-        time = audio.currentTime;
-        base = time;
-      }
+    const stop = smoothClock(audio, (t) => {
+      time = t;
       post();
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
+    });
     const off = listen('player', {
       command: (c) => {
         actions[c.action]?.(c);
@@ -202,7 +185,7 @@
     });
     if (params.get('song')) load(params.get('song'), { autoplay: params.get('autoplay') === '1' });
     return () => {
-      cancelAnimationFrame(raf);
+      stop();
       off();
     };
   });

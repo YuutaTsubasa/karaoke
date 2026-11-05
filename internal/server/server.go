@@ -59,6 +59,9 @@ type Options struct {
 	Examples fs.FS  // bundled read-only songs, one folder each; may be nil
 	Web      fs.FS  // built frontend; nil serves only the API
 	Version  string
+	// Practice serves only the practice page and reads the library: no editing,
+	// no remote control. For a server other people reach over the home network.
+	Practice bool
 }
 
 // Server implements http.Handler.
@@ -68,6 +71,7 @@ type Server struct {
 	examples fs.FS
 	web      http.Handler
 	version  string
+	practice bool
 
 	clientsMu  sync.Mutex
 	clients    map[*client]struct{}
@@ -87,7 +91,7 @@ type song struct {
 
 // New returns a server for opts.
 func New(opts Options) (*Server, error) {
-	s := &Server{examples: opts.Examples, version: opts.Version, clients: map[*client]struct{}{}}
+	s := &Server{examples: opts.Examples, version: opts.Version, practice: opts.Practice, clients: map[*client]struct{}{}}
 	if err := s.SetLibrary(opts.Library); err != nil {
 		return nil, err
 	}
@@ -131,6 +135,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.serveMedia(w, r, parts[1], parts[2])
 		return
 	}
+	if s.practice && !s.practiceAllowed(r, parts) {
+		if len(parts) == 0 || strings.HasSuffix(parts[len(parts)-1], ".html") {
+			http.Redirect(w, r, "/practice.html", http.StatusFound)
+		} else {
+			sendError(w, http.StatusForbidden, "read-only practice server")
+		}
+		return
+	}
 	if len(parts) == 0 || parts[0] != "api" {
 		if s.web != nil {
 			s.web.ServeHTTP(w, r)
@@ -170,6 +182,25 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		sendError(w, http.StatusNotFound, "not found")
 	}
+}
+
+// practiceAllowed: a practice server only reads songs and serves the practice
+// page with its assets.
+func (s *Server) practiceAllowed(r *http.Request, parts []string) bool {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		return false
+	}
+	switch {
+	case len(parts) == 0:
+		return false // "/" goes to the practice page
+	case parts[0] == "media":
+		return true
+	case parts[0] == "api":
+		return len(parts) >= 2 && parts[1] == "songs"
+	case strings.HasSuffix(parts[len(parts)-1], ".html"):
+		return len(parts) == 1 && parts[0] == "practice.html"
+	}
+	return true // scripts, styles, fonts
 }
 
 // ---------------------------------------------------------------------------

@@ -177,6 +177,41 @@ func TestWebAndUnknown(t *testing.T) {
 	}
 }
 
+func TestPracticeIsReadOnly(t *testing.T) {
+	lib := t.TempDir()
+	os.MkdirAll(filepath.Join(lib, "song"), 0o755)
+	os.WriteFile(filepath.Join(lib, "song", "song.json"), []byte(`{"title":"Song","audio":"a.wav"}`), 0o644)
+	os.WriteFile(filepath.Join(lib, "song", "a.wav"), []byte("0123456789"), 0o644)
+	web := fstest.MapFS{"index.html": {Data: []byte("library")}, "practice.html": {Data: []byte("practice")}, "assets/p.js": {Data: []byte("js")}}
+	s, err := New(Options{Library: lib, Web: web, Practice: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := httptest.NewServer(s)
+	defer ts.Close()
+
+	for _, p := range []string{"/", "/index.html", "/control.html"} {
+		if _, body := do(t, "GET", ts.URL+p, ""); body != "practice" {
+			t.Fatalf("%s should lead to the practice page: %s", p, body)
+		}
+	}
+	for _, p := range []string{"/assets/p.js", "/api/songs", "/api/songs/song", "/media/song/a.wav"} {
+		if res, _ := do(t, "GET", ts.URL+p, ""); res.StatusCode != 200 {
+			t.Fatalf("GET %s: %d", p, res.StatusCode)
+		}
+	}
+	for _, c := range [][2]string{{"POST", "/api/songs"}, {"PUT", "/api/songs/song"}, {"DELETE", "/api/songs/song"},
+		{"PUT", "/api/songs/song/lyrics"}, {"POST", "/api/command"}, {"GET", "/api/command?action=toggle"},
+		{"POST", "/api/status"}, {"GET", "/api/events"}, {"GET", "/api/info"}} {
+		if res, _ := do(t, c[0], ts.URL+c[1], "{}"); res.StatusCode != 403 {
+			t.Fatalf("%s %s: %d, want 403", c[0], c[1], res.StatusCode)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(lib, "song", "song.json")); err != nil {
+		t.Fatal("song was touched: ", err)
+	}
+}
+
 func TestCommandsReachPlayers(t *testing.T) {
 	_, ts := newTest(t)
 

@@ -117,6 +117,34 @@ http://127.0.0.1:5180/api/command?action=load&id=<歌曲id>&autoplay=1
 
 指令：`load`（`id`、`autoplay`）、`play`、`pause`、`toggle`、`stop`、`restart`、`seek`（`time`）、`seekBy`（`delta`）、`volume`（`value` 0–1）、`offset`（`delta` 或 `value`）、`key`（`delta` 或 `value`，半音）、`lyrics`（`show` 省略＝切換）、`style`（`theme`、`font`、`size`、`bottom`）、`unload`、`reload`。
 
+## 練歌頁與家用練歌伺服器
+
+`practice.html`（導覽列「練歌」）是一個畫面就能唱的頁面：選歌 → 全螢幕歌詞，聲音在打開頁面的裝置上播，不用 OBS 也不用第二個畫面。手機、平板、電視的瀏覽器都能用。
+
+- 播放／暫停、±10 秒、拖進度、升降 Key、「伴奏／原唱」切換（有原曲參考音源的歌才有），點畫面叫出按鈕，唱的時候會自動收起。
+- 歌曲存的 Key 會在按下播放時套用；在練歌頁調的 Key 不會存回曲庫。
+- 升降 Key 要靠瀏覽器的 AudioWorklet，瀏覽器只在 https 或本機（127.0.0.1）開放。從家裡網路用 `http://` 打開時，Key 按鈕會停用、一律原調。
+
+要讓家人在家裡網路用，另外跑一台**唯讀的練歌伺服器**（例如一直開著的 Mac mini）：
+
+```bash
+npm run build:practice
+```
+
+輸出 `build/practice-darwin-arm64/`（其他平台：`npm run build:practice -- linux/amd64`）。整個資料夾複製到那台 Mac，在那裡執行：
+
+```bash
+bash install-mac.sh
+```
+
+- 裝成登入後自動啟動的 launchd agent，曲庫在 `~/Data/20_Assets/Karaoke`、連接埠 5280（`bash install-mac.sh <曲庫> <連接埠>` 可改）。家人開 `http://<Mac 的名稱>.local:5280/`。
+- 練歌伺服器（`-serve -practice -listen :5280`）只提供練歌頁與讀歌：不能新增、修改、刪除歌，也沒有控制台和 OBS 指令。只有這個模式可以對家裡網路開放；桌面 App 一律只聽 127.0.0.1。
+- 把這台電腦的曲庫單向同步過去（新增與變更的檔案送過去、這邊刪掉的那邊也刪；`.trash` 和 `*.bak` 不送）：
+
+```bash
+npm run sync:practice -- <ssh 主機>
+```
+
 ## 歌詞格式
 
 原生格式是 **Enhanced LRC** 加注音標記：
@@ -172,7 +200,7 @@ npm run build
 - `npm run demo`：重新產生示範曲（`scripts/make-demo.js`，旋律與歌詞時間碼由同一份資料產生，所以完全對齊）。
 - 圖示：`internal/icon` 畫的，`go run ./scripts/icon` 重新輸出 `resources/icon.png`。
 - `main.go` 桌面殼與系統匣；`internal/server` API；`src/lib/lyrics.js` 歌詞格式；`src/lib/schedule.js` 兩行排版；`src/lib/KaraokeLine.svelte` 逐字變色；`src/lib/theme.js` 配色字型。
-- 不開視窗只跑伺服器：`go run . -serve`（`-port`、`-library`）。
+- 不開視窗只跑伺服器：`go run . -serve`（`-port`、`-library`）；唯讀練歌伺服器加 `-practice`（`-listen` 只在這個模式可用）。`go build -tags headless` 是不含桌面殼的版本，可以交叉編譯（`serve.go` 是兩者共用的部分）。
 
 ## 授權
 

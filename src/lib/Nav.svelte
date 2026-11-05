@@ -4,6 +4,7 @@
     { href: '/', id: 'library', label: '曲庫' },
     { href: '/control.html', id: 'control', label: '控制台' },
     { href: '/timing.html', id: 'timing', label: '歌詞對時' },
+    { href: '/practice.html', id: 'practice', label: '練歌' },
   ];
 </script>
 
