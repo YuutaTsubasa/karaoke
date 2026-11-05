@@ -169,7 +169,15 @@
 
   // One change at a time (POST), applied by the server to the stored profile, so
   // quick taps or another device never overwrite each other.
-  async function change(name, op) {
+  // Sent one after another, so the answers (whole profiles) also arrive in order
+  // and an older one never puts back a stale list on screen.
+  let queue = Promise.resolve();
+  function change(name, op) {
+    const next = queue.then(() => sendChange(name, op));
+    queue = next.catch(() => {});
+    return next;
+  }
+  async function sendChange(name, op) {
     const res = await fetch(`/api/profiles/${encodeURIComponent(name)}`, { method: 'POST', body: JSON.stringify(op) });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
     const saved = await res.json();
@@ -188,11 +196,8 @@
   // A key the singer picks is remembered for them (the song's own saved key is the default).
   // one pending save per person and song, so another song's save does not cancel it
   const keyTimers = new Map();
-  function rememberKey() {
-    if (!mine || !song) return;
-    const name = mine.name;
-    const id = song.id;
-    const value = key === (song.key || 0) ? null : key;
+  function rememberKey(name, id, songKey, picked) {
+    const value = picked === songKey ? null : picked;
     const slot = `${name}\n${id}`;
     clearTimeout(keyTimers.get(slot));
     keyTimers.set(
@@ -246,11 +251,13 @@
 
   async function setKey(value, remember = false) {
     if (!canShift) return;
+    // whose key this is, taken now: the first change waits for the audio worklet
+    const who = remember && mine && song ? [mine.name, song.id, song.key || 0] : null;
     try {
       key = await transposer.set(Math.max(-KEY_RANGE, Math.min(KEY_RANGE, value)));
       pendingKey = key;
       keyLatency = Number.isFinite(transposer.latency) ? transposer.latency : 0;
-      if (remember) rememberKey();
+      if (who) rememberKey(...who, key);
     } catch (e) {
       error = `無法變調：${e.message}`;
     }
