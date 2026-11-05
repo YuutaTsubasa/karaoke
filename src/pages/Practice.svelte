@@ -50,12 +50,21 @@
     font = FONTS[l?.font] ? l.font : 'rounded';
     theme = THEMES[l?.theme] ? l.theme : 'blue';
   }
+  // Looks sent but not answered yet, per person: switching away and back before
+  // the answer must show (and build on) the new look, not the stored old one.
+  const savingLook = {};
   function setLook(next) {
     font = next.font ?? font;
     theme = next.theme ?? theme;
     const l = { font, theme };
-    if (mine) change(mine.name, { look: l }).catch(() => {});
-    else store('karaoke.practice.look', (deviceLook = l));
+    if (!mine) return store('karaoke.practice.look', (deviceLook = l));
+    const name = mine.name;
+    savingLook[name] = l;
+    change(name, { look: l })
+      .catch(() => {})
+      .finally(() => {
+        if (savingLook[name] === l) delete savingLook[name];
+      });
   }
 
   // Who is singing: profiles with their own song list and key per song, kept on
@@ -75,7 +84,7 @@
     const who = mine?.name ?? null;
     if (who === lookFor) return;
     lookFor = who;
-    showLook(mine?.look ?? deviceLook);
+    showLook((who && savingLook[who]) ?? mine?.look ?? deviceLook);
   });
 
   // https: the practice server may also listen with its own certificate.
