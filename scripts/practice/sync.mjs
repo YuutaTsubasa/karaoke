@@ -54,7 +54,7 @@ for (const line of listing.split('\n')) {
 
 const send = [...mine].filter(([r, a]) => {
   const b = theirs.get(r);
-  return !b || b.size !== a.size || Math.abs(b.mtime - a.mtime) > 1;
+  return !b || b.size !== a.size || b.mtime !== a.mtime;
 });
 const gone = [...theirs.keys()].filter((r) => !mine.has(r));
 

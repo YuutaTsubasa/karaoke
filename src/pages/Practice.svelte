@@ -83,7 +83,7 @@
     }
   }
 
-  async function open(id) {
+  async function open(id, push = true) {
     error = '';
     vocals = false;
     try {
@@ -95,7 +95,7 @@
       audio.volume = Math.min(1, s.volume ?? 1);
       if (key && canShift) await setKey(0); // sets pendingKey too, so the song's own comes after
       pendingKey = canShift ? s.key || 0 : 0;
-      history.pushState({ song: id }, '', `?song=${encodeURIComponent(id)}`);
+      if (push) history.pushState({ song: id }, '', `?song=${encodeURIComponent(id)}`);
       poke();
     } catch (e) {
       error = `載入失敗：${e.message}`;
@@ -207,9 +207,14 @@
     const stop = smoothClock(audio, (t) => (time = t));
     loadList();
     const id = new URLSearchParams(location.search).get('song');
-    if (id) open(id);
+    if (id) {
+      history.replaceState({ song: id }, '', location.href);
+      open(id, false);
+    }
     const onPop = () => {
-      if (!history.state?.song && song) {
+      const id = history.state?.song;
+      if (id && id !== song?.id) open(id, false); // forward again
+      else if (!id && song) {
         audio.pause();
         song = null;
         lyrics = null;

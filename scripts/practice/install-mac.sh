@@ -21,7 +21,13 @@ install -m 755 "$here/karaoke-practice" "$app/karaoke-practice"
 # A stable ad-hoc signature, so the macOS firewall remembers its decision.
 codesign --force --sign - "$app/karaoke-practice"
 
-cat >"$plist" <<EOF
+# Paths go into XML: escape &, < and >.
+xml() { printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
+bin_x="$(xml "$app/karaoke-practice")"
+lib_x="$(xml "$library")"
+log_x="$(xml "$app/server.log")"
+
+cat >"$plist.new" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -29,19 +35,21 @@ cat >"$plist" <<EOF
   <key>Label</key><string>$label</string>
   <key>ProgramArguments</key>
   <array>
-    <string>$app/karaoke-practice</string>
+    <string>$bin_x</string>
     <string>-practice</string>
     <string>-listen</string><string>:$port</string>
-    <string>-library</string><string>$library</string>
+    <string>-library</string><string>$lib_x</string>
   </array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
-  <key>StandardOutPath</key><string>$app/server.log</string>
-  <key>StandardErrorPath</key><string>$app/server.log</string>
+  <key>StandardOutPath</key><string>$log_x</string>
+  <key>StandardErrorPath</key><string>$log_x</string>
 </dict>
 </plist>
 EOF
 
+plutil -lint -s "$plist.new" # stop here, before unloading the running agent, if it is not valid
+mv "$plist.new" "$plist"
 launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$plist"
 
