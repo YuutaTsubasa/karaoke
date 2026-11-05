@@ -8,7 +8,7 @@
   import { api, clock, KEY_RANGE, keyLabel } from '../lib/client.js';
   import { smoothClock } from '../lib/clock.js';
   import { parseLyrics } from '../lib/lyrics.js';
-  import { stageVars } from '../lib/theme.js';
+  import { FONTS, stageVars, THEMES } from '../lib/theme.js';
   import { createTransposer } from '../lib/transpose.js';
 
   // The key shifter is an AudioWorklet, which browsers only allow on https or on
@@ -33,6 +33,23 @@
 
   let width = $state(1280);
   let height = $state(720);
+
+  // Look of the lyrics, remembered on this device only.
+  const saved = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('karaoke.practice.look')) || {};
+    } catch {
+      return {};
+    }
+  })();
+  let font = $state(FONTS[saved.font] ? saved.font : 'rounded');
+  let theme = $state(THEMES[saved.theme] ? saved.theme : 'blue');
+  let lookOpen = $state(false);
+  $effect(() => {
+    try {
+      localStorage.setItem('karaoke.practice.look', JSON.stringify({ font, theme }));
+    } catch {}
+  });
 
   /** @type {HTMLAudioElement} */
   let audio;
@@ -241,7 +258,7 @@
 {:else}
   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
   <main class="sing" class:hide={!controls} onclick={poke} onpointermove={poke}>
-    <div class="stage" style={stageVars({ size, bottom })}>
+    <div class="stage" style={stageVars({ theme, font, size, bottom })}>
       <KaraokeStage {lyrics} time={lyricTime} {song} />
     </div>
 
@@ -255,8 +272,30 @@
         <b>{song.title}</b>
         {#if song.artist}<span>{song.artist}</span>{/if}
       </div>
+      <button onclick={() => (lookOpen = !lookOpen)} class:on={lookOpen}>字型</button>
       <button onclick={toggleFullscreen}>{fullscreen ? '離開全螢幕' : '全螢幕'}</button>
     </div>
+
+    {#if lookOpen && controls}
+      <div class="look">
+        <div class="group">
+          <span>字型</span>
+          {#each Object.entries(FONTS) as [id, f] (id)}
+            <button class:on={font === id} style="font-family: {f.family}; font-weight: {f.weight}" onclick={() => (font = id)}>
+              {f.label.replace(/（.*）/, '')}
+            </button>
+          {/each}
+        </div>
+        <div class="group">
+          <span>顏色</span>
+          {#each Object.entries(THEMES) as [id, t] (id)}
+            <button class:on={theme === id} onclick={() => (theme = id)}>
+              <i style="background: {t.sungFill}"></i>{t.label.replace(/（.*）/, '')}
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
 
     <div class="bottom bar">
       <div class="seek">
@@ -484,6 +523,55 @@
   .seg button.on {
     background: var(--ui-blue);
     border-color: var(--ui-blue);
+  }
+  .top button.on {
+    background: var(--ui-blue);
+    border-color: var(--ui-blue);
+  }
+  .look {
+    position: absolute;
+    top: calc(max(10px, env(safe-area-inset-top)) + 64px);
+    right: 16px;
+    left: 16px;
+    max-width: 560px;
+    margin-left: auto;
+    padding: 12px;
+    background: rgb(2 4 10 / 0.88);
+    border: 1px solid rgb(238 242 250 / 0.2);
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .look .group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .look .group > span {
+    width: 3em;
+    color: #8f9ab0;
+    font-size: 0.85rem;
+  }
+  .look button {
+    min-height: 40px;
+    padding: 0 12px;
+    background: rgb(238 242 250 / 0.08);
+    border: 1px solid rgb(238 242 250 / 0.25);
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .look button.on {
+    border-color: var(--ui-yellow);
+    box-shadow: inset 0 0 0 1px var(--ui-yellow);
+  }
+  .look i {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
   }
   .big-play {
     position: absolute;
