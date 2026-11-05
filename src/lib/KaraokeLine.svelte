@@ -103,9 +103,9 @@
     left: 0;
     bottom: 0;
   }
-  .syl {
-    position: relative;
-  }
+  /* .syl must not be positioned: Safari and older Chrome leave text in its own
+     layer out of the sung copy's background-clip: text, and the sung colours turn
+     white. Syllable offsets are measured from .copy, which is positioned. */
   ruby {
     ruby-position: over;
     ruby-align: center;
