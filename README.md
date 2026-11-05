@@ -140,7 +140,7 @@ bash install-mac.sh
 
 - 裝成登入後自動啟動的 launchd agent，曲庫在 `~/Data/20_Assets/Karaoke`、連接埠 5280（`bash install-mac.sh <曲庫> <連接埠>` 可改）。家人開 `http://<Mac 的名稱>.local:5280/`。
 - https：安裝腳本在 `~/Library/Application Support/KaraokePractice/tls/` 建一個自己的憑證機構（只建一次）並簽發伺服器憑證（Mac 的 `.local` 名稱與目前 IP，每次安裝重簽，800 天），https 開在下一個連接埠（5281）。每台家人裝置從練歌頁下載 `/ca.crt` 裝一次、設成信任後，改用 `https://<Mac 的名稱>.local:5281/` 就能升降 Key。Mac 的 IP 變了就重跑一次安裝腳本（或只用 `.local` 名稱）。
-- macOS 防火牆開著時要放行一次（安裝腳本會印出指令）；每次更新程式後簽章會變，要再放行一次。
+- macOS 防火牆開著時要放行一次（安裝腳本會印出指令）；更新程式後若其他裝置又連不到，再放行一次（2026-11-05 實測更新後仍可連）。
 - 練歌伺服器（`-serve -practice -listen :5280`）只提供練歌頁與讀歌：不能新增、修改、刪除歌，也沒有控制台和 OBS 指令。只有這個模式可以對家裡網路開放；桌面 App 一律只聽 127.0.0.1。
 - 把這台電腦的曲庫單向同步過去（新增與變更的檔案送過去、這邊刪掉的那邊也刪；`.trash` 和 `*.bak` 不送）：
 

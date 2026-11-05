@@ -91,7 +91,7 @@ launchctl bootstrap "gui/$(id -u)" "$plist"
 fw=/usr/libexec/ApplicationFirewall/socketfilterfw
 if "$fw" --getglobalstate 2>/dev/null | grep -q enabled; then
   echo "The macOS firewall is on: allow incoming connections for $app/karaoke-practice"
-  echo "(again after each update: a new build has a new signature)"
+  echo "(if other devices cannot connect after an update, run it again)"
   echo "  sudo $fw --add \"$app/karaoke-practice\" && sudo $fw --unblockapp \"$app/karaoke-practice\""
 fi
 echo "practice server: http://$host.local:$port/  https://$host.local:$tls_port/  (library: $library)"

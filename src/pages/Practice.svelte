@@ -580,7 +580,7 @@
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 10px;
   }
-  li {
+  ul > li {
     display: flex;
     gap: 6px;
   }
