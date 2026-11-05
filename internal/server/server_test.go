@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -177,6 +178,47 @@ func TestWebAndUnknown(t *testing.T) {
 	}
 }
 
+func TestPracticeIsReadOnly(t *testing.T) {
+	lib := t.TempDir()
+	os.MkdirAll(filepath.Join(lib, "song"), 0o755)
+	os.WriteFile(filepath.Join(lib, "song", "song.json"), []byte(`{"title":"Song","audio":"a.wav"}`), 0o644)
+	os.WriteFile(filepath.Join(lib, "song", "a.wav"), []byte("0123456789"), 0o644)
+	web := fstest.MapFS{"index.html": {Data: []byte("library")}, "practice.html": {Data: []byte("practice")}, "assets/p.js": {Data: []byte("js")}}
+	s, err := New(Options{Library: lib, Web: web, Practice: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := httptest.NewServer(s)
+	defer ts.Close()
+
+	for _, p := range []string{"/", "/index.html", "/control.html"} {
+		if _, body := do(t, "GET", ts.URL+p, ""); body != "practice" {
+			t.Fatalf("%s should lead to the practice page: %s", p, body)
+		}
+	}
+	for _, p := range []string{"/assets/p.js", "/api/songs", "/api/songs/song", "/media/song/a.wav"} {
+		if res, _ := do(t, "GET", ts.URL+p, ""); res.StatusCode != 200 {
+			t.Fatalf("GET %s: %d", p, res.StatusCode)
+		}
+	}
+	for _, c := range [][2]string{{"POST", "/api/songs"}, {"PUT", "/api/songs/song"}, {"DELETE", "/api/songs/song"},
+		{"PUT", "/api/songs/song/lyrics"}, {"POST", "/api/command"}, {"GET", "/api/command?action=toggle"},
+		{"POST", "/api/status"}, {"GET", "/api/events"}, {"GET", "/api/info"}} {
+		if res, _ := do(t, c[0], ts.URL+c[1], "{}"); res.StatusCode != 403 {
+			t.Fatalf("%s %s: %d, want 403", c[0], c[1], res.StatusCode)
+		}
+	}
+	if res, _ := do(t, "PUT", ts.URL+"/api/profiles/a", `{}`); res.StatusCode != 404 {
+		t.Fatalf("profiles without -profiles: %d, want 404 (never write the library)", res.StatusCode)
+	}
+	if _, err := os.Stat(filepath.Join(lib, ".practice")); err == nil {
+		t.Fatal("practice server wrote into the library")
+	}
+	if _, err := os.Stat(filepath.Join(lib, "song", "song.json")); err != nil {
+		t.Fatal("song was touched: ", err)
+	}
+}
+
 func TestCommandsReachPlayers(t *testing.T) {
 	_, ts := newTest(t)
 
@@ -229,5 +271,63 @@ func TestSafeName(t *testing.T) {
 	}
 	if n, err := safeName("伴奏 (off vocal).mp3"); err != nil || n != "伴奏 (off vocal).mp3" {
 		t.Errorf("good name rejected: %v", err)
+	}
+}
+
+func TestPracticeProfiles(t *testing.T) {
+	lib := t.TempDir()
+	os.MkdirAll(filepath.Join(lib, "song"), 0o755)
+	os.WriteFile(filepath.Join(lib, "song", "song.json"), []byte(`{"title":"Song"}`), 0o644)
+	data := t.TempDir()
+	ca := filepath.Join(data, "ca.crt")
+	os.WriteFile(ca, []byte("-----BEGIN CERTIFICATE-----"), 0o644)
+	s, err := New(Options{Library: lib, Practice: true, Profiles: filepath.Join(data, "profiles.json"), CACert: ca, HTTPSPort: 5281})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := httptest.NewServer(s)
+	defer ts.Close()
+
+	if _, body := do(t, "GET", ts.URL+"/api/profiles", ""); body != `{"profiles":[]}`+"\n" && !strings.Contains(body, `"profiles":[]`) {
+		t.Fatalf("empty list: %s", body)
+	}
+	name := "/api/profiles/" + url.PathEscape("媽媽")
+	if res, body := do(t, "PUT", ts.URL+name, `{"songs":["song"],"keys":{"song":-3}}`); res.StatusCode != 200 {
+		t.Fatalf("put: %d %s", res.StatusCode, body)
+	}
+	if _, body := do(t, "GET", ts.URL+"/api/profiles", ""); !strings.Contains(body, `"name":"媽媽"`) || !strings.Contains(body, `"song":-3`) {
+		t.Fatalf("list: %s", body)
+	}
+	for _, c := range [][2]string{
+		{"/api/profiles/" + url.PathEscape(" spaced"), `{}`},
+		{"/api/profiles/a", `{"keys":{"song":40}}`},
+		{"/api/profiles/a", `not json`},
+	} {
+		if res, _ := do(t, "PUT", ts.URL+c[0], c[1]); res.StatusCode != 400 {
+			t.Fatalf("PUT %s %s: %d, want 400", c[0], c[1], res.StatusCode)
+		}
+	}
+	for _, op := range []string{`{"add":"b"}`, `{"add":"c"}`, `{"remove":"song"}`, `{"song":"b","key":2}`, `{"song":"song","key":null}`} {
+		if res, body := do(t, "POST", ts.URL+name, op); res.StatusCode != 200 {
+			t.Fatalf("POST %s: %d %s", op, res.StatusCode, body)
+		}
+	}
+	if _, body := do(t, "GET", ts.URL+"/api/profiles", ""); !strings.Contains(body, `"songs":["b","c"]`) || !strings.Contains(body, `"keys":{"b":2}`) {
+		t.Fatalf("after changes: %s", body)
+	}
+	if res, _ := do(t, "POST", ts.URL+"/api/profiles/nobody", `{"add":"x"}`); res.StatusCode != 404 {
+		t.Fatalf("change unknown profile: %d", res.StatusCode)
+	}
+	if res, _ := do(t, "DELETE", ts.URL+name, ""); res.StatusCode != 204 {
+		t.Fatalf("delete: %d", res.StatusCode)
+	}
+	if _, err := os.Stat(filepath.Join(lib, ".practice")); err == nil {
+		t.Fatal("profiles were written into the library")
+	}
+	if _, body := do(t, "GET", ts.URL+"/api/practice", ""); !strings.Contains(body, `"https":5281`) || !strings.Contains(body, `"ca":true`) {
+		t.Fatalf("practice info: %s", body)
+	}
+	if res, body := do(t, "GET", ts.URL+"/ca.crt", ""); res.StatusCode != 200 || !strings.HasPrefix(body, "-----BEGIN") {
+		t.Fatalf("ca: %d %s", res.StatusCode, body)
 	}
 }
