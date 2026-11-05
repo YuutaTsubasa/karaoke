@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/YuutaTsubasa/karaoke/internal/server"
@@ -37,6 +38,11 @@ type flags struct {
 	noWeb    bool
 	practice bool
 	listen   string
+	profiles string
+	tlsCert  string
+	tlsKey   string
+	tlsAt    string
+	caCert   string
 }
 
 func parseFlags() flags {
@@ -46,27 +52,46 @@ func parseFlags() flags {
 	flag.StringVar(&f.library, "library", "", "song library folder (default: the config's, else Documents/Karaoke)")
 	flag.BoolVar(&f.noWeb, "no-web", false, "serve the API only (the Vite dev server serves the pages)")
 	flag.BoolVar(&f.practice, "practice", false, "with -serve: read-only practice server")
-	flag.StringVar(&f.listen, "listen", "", "with -serve -practice: address to listen on, e.g. :5190 (default 127.0.0.1)")
+	flag.StringVar(&f.listen, "listen", "", "with -serve -practice: address to listen on, e.g. :5280 (default 127.0.0.1)")
+	flag.StringVar(&f.profiles, "profiles", "", "practice profiles file (default <library>/.practice/profiles.json)")
+	flag.StringVar(&f.tlsCert, "tls-cert", "", "with -practice: certificate for an https listener as well")
+	flag.StringVar(&f.tlsKey, "tls-key", "", "with -practice: key for -tls-cert")
+	flag.StringVar(&f.tlsAt, "tls-listen", ":5281", "with -tls-cert: https address")
+	flag.StringVar(&f.caCert, "ca-cert", "", "with -practice: CA certificate offered at /ca.crt")
 	flag.Parse()
 	return f
 }
 
 // serve runs the server alone and does not return.
 func serve(f flags) {
-	if f.listen != "" && !f.practice {
-		log.Fatal("-listen is only allowed with -practice")
+	if (f.listen != "" || f.tlsCert != "") && !f.practice {
+		log.Fatal("-listen and -tls-cert are only allowed with -practice")
 	}
 	cfg := loadConfig("")
 	lib := firstNonEmpty(f.library, os.Getenv("KARAOKE_LIBRARY"), cfg.Library, "library")
-	srv, ln := start(lib, pick(f.port, cfg.Port), !f.noWeb, f.practice, f.listen)
+	opts := server.Options{Profiles: f.profiles, CACert: f.caCert}
+	if f.tlsCert != "" {
+		_, p, err := net.SplitHostPort(f.tlsAt)
+		if err != nil {
+			log.Fatal(err)
+		}
+		opts.HTTPSPort, _ = strconv.Atoi(p)
+	}
+	srv, ln := start(lib, pick(f.port, cfg.Port), !f.noWeb, f.practice, f.listen, opts)
 	log.Printf("karaoke: library %s", srv.Library())
 	log.Printf("karaoke: listening on http://%s/", ln.Addr())
+	if f.tlsCert != "" {
+		go func() {
+			log.Printf("karaoke: listening on https://%s/", f.tlsAt)
+			log.Fatal(http.ListenAndServeTLS(f.tlsAt, f.tlsCert, f.tlsKey, srv))
+		}()
+	}
 	log.Fatal(http.Serve(ln, srv))
 }
 
 // start is the -serve mode: no window, fail loudly.
-func start(lib string, port int, web, practice bool, addr string) (*server.Server, net.Listener) {
-	opts := server.Options{Library: lib, Version: "dev", Practice: practice}
+func start(lib string, port int, web, practice bool, addr string, opts server.Options) (*server.Server, net.Listener) {
+	opts.Library, opts.Version, opts.Practice = lib, "dev", practice
 	if !practice {
 		opts.Examples = os.DirFS("examples") // the demo song, for development only
 	}

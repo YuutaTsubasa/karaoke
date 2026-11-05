@@ -16,6 +16,7 @@
 //	GET    /api/command?action=toggle        same, for Stream Deck "Website" buttons
 //	POST   /api/status   { ... }             player state, forwarded to controls
 //	GET    /api/info                     library folder and version
+//	/api/profiles, /api/practice, /ca.crt   practice page (profiles.go)
 package server
 
 import (
@@ -62,6 +63,12 @@ type Options struct {
 	// Practice serves only the practice page and reads the library: no editing,
 	// no remote control. For a server other people reach over the home network.
 	Practice bool
+	// Profiles is the practice page's profiles file (default <library>/.practice/profiles.json).
+	Profiles string
+	// CACert is served at /ca.crt so devices can trust the practice server's https.
+	CACert string
+	// HTTPSPort tells the practice page where the https server is (0 = none).
+	HTTPSPort int
 }
 
 // Server implements http.Handler.
@@ -72,6 +79,11 @@ type Server struct {
 	web      http.Handler
 	version  string
 	practice bool
+
+	profilesMu sync.Mutex
+	profiles   string
+	caCert     string
+	httpsPort  int
 
 	clientsMu  sync.Mutex
 	clients    map[*client]struct{}
@@ -91,7 +103,7 @@ type song struct {
 
 // New returns a server for opts.
 func New(opts Options) (*Server, error) {
-	s := &Server{examples: opts.Examples, version: opts.Version, practice: opts.Practice, clients: map[*client]struct{}{}}
+	s := &Server{examples: opts.Examples, version: opts.Version, practice: opts.Practice, profiles: opts.Profiles, caCert: opts.CACert, httpsPort: opts.HTTPSPort, clients: map[*client]struct{}{}}
 	if err := s.SetLibrary(opts.Library); err != nil {
 		return nil, err
 	}
@@ -143,6 +155,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	if len(parts) == 1 && parts[0] == "ca.crt" {
+		s.serveCA(w, r)
+		return
+	}
 	if len(parts) == 0 || parts[0] != "api" {
 		if s.web != nil {
 			s.web.ServeHTTP(w, r)
@@ -179,14 +195,22 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		sendJSON(w, http.StatusOK, map[string]any{"library": s.Library(), "version": s.version})
 	case len(parts) >= 2 && parts[1] == "songs":
 		s.songs(w, r, parts[2:])
+	case len(parts) >= 2 && parts[1] == "profiles":
+		s.handleProfiles(w, r, parts[2:])
+	case len(parts) == 2 && parts[1] == "practice":
+		_, err := os.Stat(s.caCert)
+		sendJSON(w, http.StatusOK, map[string]any{"https": s.httpsPort, "ca": s.caCert != "" && err == nil})
 	default:
 		sendError(w, http.StatusNotFound, "not found")
 	}
 }
 
-// practiceAllowed: a practice server only reads songs and serves the practice
-// page with its assets.
+// practiceAllowed: a practice server only reads songs, keeps the practice
+// profiles, and serves the practice page with its assets.
 func (s *Server) practiceAllowed(r *http.Request, parts []string) bool {
+	if len(parts) >= 2 && parts[0] == "api" && parts[1] == "profiles" {
+		return true // its own file, never the library
+	}
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		return false
 	}
@@ -196,7 +220,7 @@ func (s *Server) practiceAllowed(r *http.Request, parts []string) bool {
 	case parts[0] == "media":
 		return true
 	case parts[0] == "api":
-		return len(parts) >= 2 && parts[1] == "songs"
+		return len(parts) >= 2 && parts[1] == "songs" || len(parts) == 2 && parts[1] == "practice"
 	case strings.HasSuffix(parts[len(parts)-1], ".html"):
 		return len(parts) == 1 && parts[0] == "practice.html"
 	}
