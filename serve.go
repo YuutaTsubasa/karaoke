@@ -48,14 +48,14 @@ func parseFlags() flags {
 	flag.BoolVar(&f.practice, "practice", false, "with -serve: read-only practice server")
 	flag.StringVar(&f.listen, "listen", "", "with -serve -practice: address to listen on, e.g. :5190 (default 127.0.0.1)")
 	flag.Parse()
-	if f.listen != "" && !(f.serve && f.practice) {
-		log.Fatal("-listen is only allowed with -serve -practice")
-	}
 	return f
 }
 
 // serve runs the server alone and does not return.
 func serve(f flags) {
+	if f.listen != "" && !f.practice {
+		log.Fatal("-listen is only allowed with -practice")
+	}
 	cfg := loadConfig("")
 	lib := firstNonEmpty(f.library, os.Getenv("KARAOKE_LIBRARY"), cfg.Library, "library")
 	srv, ln := start(lib, pick(f.port, cfg.Port), !f.noWeb, f.practice, f.listen)

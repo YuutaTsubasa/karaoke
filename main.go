@@ -28,6 +28,9 @@ import (
 
 func main() {
 	f := parseFlags()
+	if f.listen != "" && !f.serve {
+		log.Fatal("-listen is only allowed with -serve -practice")
+	}
 	if f.serve {
 		serve(f)
 	}

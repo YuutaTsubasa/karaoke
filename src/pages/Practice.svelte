@@ -63,7 +63,9 @@
     if (!q) return songs;
     return songs.filter((s) => `${s.title} ${s.artist ?? ''} ${(s.tags ?? []).join(' ')}`.toLowerCase().includes(q));
   });
-  let lyricTime = $derived(time - keyLatency - (song?.offset || 0) - (lyrics?.offset || 0));
+  // The original recording may start later than the instrumental (song.reference.offset).
+  let refShift = $derived(vocals ? Number(song?.reference?.offset || 0) : 0);
+  let lyricTime = $derived(time - refShift - keyLatency - (song?.offset || 0) - (lyrics?.offset || 0));
 
   // Lyric size from the screen shape: 8% of the height on a 16:9 screen, smaller on
   // a tall phone so a line still fits (long lines wrap), and lifted off the bottom
@@ -91,8 +93,8 @@
       time = 0;
       audio.src = s.audioUrl;
       audio.volume = Math.min(1, s.volume ?? 1);
+      if (key && canShift) await setKey(0); // sets pendingKey too, so the song's own comes after
       pendingKey = canShift ? s.key || 0 : 0;
-      if (key && canShift) await setKey(0);
       history.pushState({ song: id }, '', `?song=${encodeURIComponent(id)}`);
       poke();
     } catch (e) {
@@ -142,7 +144,8 @@
   // Switch between the instrumental and the original recording at the same spot.
   function setVocals(on) {
     if (!song?.referenceAudioUrl || on === vocals) return;
-    const at = audio.currentTime;
+    const shift = Number(song.reference?.offset || 0);
+    const at = Math.max(0, audio.currentTime + (on ? shift : -shift));
     const wasPlaying = !audio.paused;
     vocals = on;
     audio.src = on ? song.referenceAudioUrl : song.audioUrl;

@@ -45,7 +45,7 @@ function walk(dir, rel = '', out = new Map()) {
 const mine = walk(local);
 const theirs = new Map();
 const listing = ssh(
-  `mkdir -p ${remote} && cd ${remote} && find . -type f ! -path './.*' ! -name '*.bak' -exec stat -f '%z %m %N' {} +`,
+  `mkdir -p ${remote} && cd ${remote} && find . -type f ! -path '*/.*' ! -name '*.bak' -exec stat -f '%z %m %N' {} +`,
 );
 for (const line of listing.split('\n')) {
   const m = /^(\d+) (\d+) \.\/(.+)$/.exec(line);
