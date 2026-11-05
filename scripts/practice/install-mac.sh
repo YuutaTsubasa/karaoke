@@ -17,6 +17,7 @@ app="$HOME/Library/Application Support/KaraokePractice"
 plist="$HOME/Library/LaunchAgents/$label.plist"
 
 mkdir -p "$app" "$library" "$HOME/Library/LaunchAgents"
+library="$(cd "$library" && pwd)" # launchd does not start in this folder
 install -m 755 "$here/karaoke-practice" "$app/karaoke-practice"
 # A stable ad-hoc signature, so the macOS firewall remembers its decision.
 codesign --force --sign - "$app/karaoke-practice"
