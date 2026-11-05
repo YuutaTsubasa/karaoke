@@ -52,18 +52,18 @@
   }
   // Looks sent but not answered yet, per person: switching away and back before
   // the answer must show (and build on) the new look, not the stored old one.
-  const savingLook = {};
+  const savingLook = new Map();
   function setLook(next) {
     font = next.font ?? font;
     theme = next.theme ?? theme;
     const l = { font, theme };
     if (!mine) return store('karaoke.practice.look', (deviceLook = l));
     const name = mine.name;
-    savingLook[name] = l;
+    savingLook.set(name, l);
     change(name, { look: l })
       .catch(() => {})
       .finally(() => {
-        if (savingLook[name] === l) delete savingLook[name];
+        if (savingLook.get(name) === l) savingLook.delete(name);
       });
   }
 
@@ -84,7 +84,7 @@
     const who = mine?.name ?? null;
     if (who === lookFor) return;
     lookFor = who;
-    showLook((who && savingLook[who]) ?? mine?.look ?? deviceLook);
+    showLook(savingLook.get(who) ?? mine?.look ?? deviceLook);
   });
 
   // https: the practice server may also listen with its own certificate.
