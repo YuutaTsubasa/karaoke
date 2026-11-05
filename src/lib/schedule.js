@@ -50,3 +50,77 @@ export function schedule(lines, opts = {}) {
   }
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// Long lines: real karaoke screens break a line that does not fit into two rows
+// rather than shrinking it. Split at a phrase break (space, punctuation, or a
+// pause in the singing) as close to the middle as possible.
+
+const HALF = /[\x20-\x7e｡-ﾟ]/;
+const PUNCT = /[、。，．,.！？!?…」』）)]\s*$/u;
+const SHRINK_OK = 1.12; // up to this much too wide, shrink a little rather than split
+// A piece split off a line must not be tiny: while it is sung, the other row can
+// only show what comes after it once the row above is free, so a two-character
+// piece leaves the singer looking at nothing new.
+const MIN_PIECE_EM = 4;
+const MIN_PIECE_SHARE = 0.2;
+
+function partWidth(p) {
+  const w = (s) => [...s].reduce((n, c) => n + (HALF.test(c) ? 0.55 : 1), 0);
+  return Math.max(w(p.base), p.ruby ? w(p.ruby) * 0.46 : 0);
+}
+
+/** Width of a syllable in em. */
+export function syllableWidth(s) {
+  return s.parts.reduce((n, p) => n + partWidth(p), 0);
+}
+
+function trimEnd(s) {
+  const parts = s.parts.map((p) => ({ ...p }));
+  const last = parts.at(-1);
+  if (!last.ruby) last.base = last.base.replace(/\s+$/u, '');
+  return { ...s, parts };
+}
+
+function lineOf(syllables, timed) {
+  syllables = [...syllables.slice(0, -1), trimEnd(syllables.at(-1))];
+  return { start: syllables[0].start, end: syllables.at(-1).end, timed, syllables };
+}
+
+/**
+ * Split lines wider than `maxEm` (in em of the lyric font) into several lines.
+ * Only breaks at a space, punctuation or a clear pause in the singing, never inside
+ * a phrase, and never splits off a tiny piece; a line slightly too wide, or with
+ * no such break, is shrunk instead.
+ * @param {import('./lyrics.js').Line[]} lines
+ * @returns {import('./lyrics.js').Line[]}
+ */
+export function wrapLines(lines, maxEm) {
+  if (!(maxEm > 0)) return lines;
+  const out = [];
+  const split = (line) => {
+    const syl = line.syllables;
+    const widths = syl.map(syllableWidth);
+    const total = widths.reduce((a, b) => a + b, 0);
+    if (total <= maxEm * SHRINK_OK || syl.length < 2 || !line.timed) return out.push(line);
+    let best = -1;
+    let bestCost = Infinity;
+    let left = 0;
+    for (let k = 1; k < syl.length; k++) {
+      left += widths[k - 1];
+      const text = syl[k - 1].parts.map((p) => p.base).join('');
+      const kind = /\s$/u.test(text) ? 0 : PUNCT.test(text) ? 0.3 : syl[k].start - syl[k - 1].end > 0.6 ? 0.6 : null;
+      if (kind == null) continue;
+      if (Math.min(left, total - left) < Math.max(MIN_PIECE_EM, total * MIN_PIECE_SHARE)) continue;
+      const balance = Math.abs(left - total / 2) / total;
+      const overflow = Math.max(left, total - left) > maxEm * SHRINK_OK ? 0.4 : 0;
+      const cost = balance + kind * 0.3 + overflow;
+      if (cost < bestCost) [best, bestCost] = [k, cost];
+    }
+    if (best < 0) return out.push(line);
+    split(lineOf(syl.slice(0, best), true));
+    split(lineOf(syl.slice(best), true));
+  };
+  lines.forEach(split);
+  return out;
+}

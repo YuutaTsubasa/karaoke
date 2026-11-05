@@ -55,6 +55,7 @@ textarea {
   border-radius: var(--ui-radius);
   padding: 6px 8px;
   min-width: 0;
+  box-sizing: border-box;
 }
 textarea {
   font-family: var(--ui-font-mono), var(--ui-font);

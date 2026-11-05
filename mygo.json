@@ -1,0 +1,9 @@
+{
+  "name": "Karaoke",
+  "slug": "karaoke",
+  "identifier": "studio.yuuta-tsubasa.karaoke",
+  "version": "0.2.0",
+  "copyright": "© 2026 Yuuta Tsubasa",
+  "out": "build",
+  "windows": { "displayName": "歌回 Karaoke" }
+}

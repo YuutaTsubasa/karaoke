@@ -1,5 +1,10 @@
 // Browser-side helpers for the local API.
 
+export const KEY_RANGE = 7; // key change limit, semitones each way
+
+/** ♯2 / ♭3 / 原調 */
+export const keyLabel = (k) => (k > 0 ? `♯${k}` : k < 0 ? `♭${-k}` : '原調');
+
 async function json(res) {
   if (!res.ok) {
     let msg = `${res.status} ${res.statusText}`;

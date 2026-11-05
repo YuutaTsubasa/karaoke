@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { Button, StatusLamp, Toaster, toast } from '../lib/ui/index.js';
   import Nav from '../lib/Nav.svelte';
-  import { api, clock, listen, today } from '../lib/client.js';
+  import { KEY_RANGE, api, clock, keyLabel, listen, today } from '../lib/client.js';
   import { FONTS, THEMES } from '../lib/theme.js';
 
   let songs = $state([]);
@@ -90,6 +90,17 @@
     toast({ title: '已存入歌曲設定', body: `歌詞偏移 ${full.offset.toFixed(2)} 秒`, tone: 'success' });
   }
 
+  async function saveKey() {
+    if (!current || !status) return;
+    const full = await api.song(current.id);
+    delete full.lyricsText;
+    full.key = status.key || 0;
+    await api.save(full);
+    await refresh();
+    toast({ title: '已存入歌曲設定', body: `下次載入這首歌時自動 ${keyLabel(full.key)}`, tone: 'success' });
+  }
+
+
   function seekTo(e) {
     if (!status?.duration) return;
     const r = e.currentTarget.getBoundingClientRect();
@@ -106,6 +117,8 @@
       ArrowDown: () => send('volume', { value: Math.max(0, (status?.volume ?? 1) - 0.05) }),
       BracketLeft: () => send('offset', { delta: -0.05 }),
       BracketRight: () => send('offset', { delta: 0.05 }),
+      Minus: () => send('key', { delta: -1 }),
+      Equal: () => send('key', { delta: 1 }),
       KeyR: () => send('restart'),
       KeyS: () => send('stop'),
       KeyH: () => send('lyrics'),
@@ -168,6 +181,15 @@
           <Button size="sm" variant="ink" disabled={!current || !status?.offset} onclick={saveOffset}>存到這首歌</Button>
         </div>
       </div>
+      <div class="field">
+        <span>Key {keyLabel(status?.key ?? 0)}（<kbd>-</kbd> 降 <kbd>=</kbd> 升）</span>
+        <div class="row">
+          <Button size="sm" variant="ghost" disabled={(status?.key ?? 0) <= -KEY_RANGE} onclick={() => send('key', { delta: -1 })}>♭ 降</Button>
+          <Button size="sm" variant="ghost" disabled={(status?.key ?? 0) >= KEY_RANGE} onclick={() => send('key', { delta: 1 })}>♯ 升</Button>
+          <Button size="sm" variant="ghost" onclick={() => send('key', { value: 0 })}>原調</Button>
+          <Button size="sm" variant="ink" disabled={!current} onclick={saveKey}>存到這首歌</Button>
+        </div>
+      </div>
       <div class="field grow">
         <span>唱過紀錄（直播標題，可留空）</span>
         <div class="row">
@@ -195,6 +217,7 @@
               <td class="muted nowrap">
                 {#if !s.hasAudio}<span class="bad">缺伴奏</span>{/if}
                 {#if !s.hasLyrics}<span class="bad">缺歌詞</span>{/if}
+                {#if s.key}<span class="key">{keyLabel(s.key)}</span>{/if}
                 {#if s.performances?.length}唱過 {s.performances.length} 次{/if}
               </td>
               <td class="nowrap actions">
@@ -250,7 +273,7 @@
       </section>
 
       <section class="card muted keys">
-        <kbd>Space</kbd> 播放／暫停　<kbd>←</kbd><kbd>→</kbd> ±5 秒　<kbd>↑</kbd><kbd>↓</kbd> 音量　<kbd>[</kbd><kbd>]</kbd> 歌詞偏移　<kbd>R</kbd> 從頭　<kbd>S</kbd> 停止　<kbd>H</kbd> 歌詞顯示　<kbd>N</kbd> 下一首
+        <kbd>Space</kbd> 播放／暫停　<kbd>←</kbd><kbd>→</kbd> ±5 秒　<kbd>↑</kbd><kbd>↓</kbd> 音量　<kbd>[</kbd><kbd>]</kbd> 歌詞偏移　<kbd>-</kbd><kbd>=</kbd> 降／升 Key　<kbd>R</kbd> 從頭　<kbd>S</kbd> 停止　<kbd>H</kbd> 歌詞顯示　<kbd>N</kbd> 下一首
       </section>
     </aside>
   </div>
@@ -295,11 +318,22 @@
       grid-template-columns: 1fr;
     }
   }
+  .head {
+    margin-bottom: var(--ui-space-3);
+  }
   .head h2 {
     margin: 0;
   }
+  aside {
+    min-width: 0;
+  }
   tr.playing {
     background: var(--ui-blue-soft);
+  }
+  .key {
+    font-weight: 700;
+    color: var(--ui-blue);
+    margin-right: 6px;
   }
   .nowrap {
     white-space: nowrap;
@@ -325,7 +359,7 @@
   }
   .look {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--ui-space-2);
     margin-bottom: var(--ui-space-3);
   }

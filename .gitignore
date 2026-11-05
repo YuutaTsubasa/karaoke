@@ -7,3 +7,7 @@ examples/*/*.wav
 *.bak
 *.tmp
 .DS_Store
+
+# Desktop app builds (mygo build)
+build/
+.mygo/

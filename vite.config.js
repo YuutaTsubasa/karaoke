@@ -1,35 +1,21 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { fileURLToPath } from 'node:url';
-import { karaokeApi } from './server/api.js';
-import { buildDemo } from './scripts/make-demo.js';
 
-const root = fileURLToPath(new URL('.', import.meta.url));
+// The API lives in the Go server (internal/server). In development `npm run dev`
+// starts it on API_PORT and Vite proxies to it; the built pages are embedded into
+// the desktop app, which serves both on one port.
 const port = Number(process.env.KARAOKE_PORT || 5180);
-
-function api() {
-  buildDemo(); // writes examples/demo/instrumental.wav on first run
-  const handle = karaokeApi({ root });
-  return {
-    name: 'karaoke-api',
-    configureServer(server) {
-      server.middlewares.use(handle);
-    },
-    configurePreviewServer(server) {
-      server.middlewares.use(handle);
-    },
-  };
-}
+const api = `http://127.0.0.1:${process.env.KARAOKE_API_PORT || 5181}`;
 
 export default defineConfig({
-  plugins: [svelte(), api()],
+  plugins: [svelte()],
   server: {
     host: '127.0.0.1',
     port,
     strictPort: true,
-    watch: { ignored: ['**/library/**', '**/examples/**'] },
+    proxy: { '/api': api, '/media': api },
+    watch: { ignored: ['**/library/**', '**/examples/**', '**/build/**'] },
   },
-  preview: { host: '127.0.0.1', port, strictPort: true },
   build: {
     rollupOptions: {
       input: {

@@ -3,13 +3,19 @@ import '@fontsource/m-plus-rounded-1c/800.css';
 import '@fontsource/zen-maru-gothic/900.css';
 import '@fontsource-variable/noto-sans-jp/index.css';
 import '@fontsource-variable/noto-sans-tc/index.css';
+import '@fontsource-variable/noto-serif-jp/index.css';
+import '@fontsource-variable/noto-serif-tc/index.css';
+import '@fontsource/shippori-mincho-b1/800.css';
 
 const CJK_FALLBACK = `"Noto Sans TC Variable", "Noto Sans JP Variable", "Microsoft JhengHei UI", "Yu Gothic UI", sans-serif`;
+const SERIF_FALLBACK = `"Noto Serif TC Variable", "Noto Serif JP Variable", "PMingLiU", "Yu Mincho", serif`;
 
 export const FONTS = {
   rounded: { label: 'M PLUS Rounded 1c（圓體）', family: `"M PLUS Rounded 1c", ${CJK_FALLBACK}`, weight: 800 },
   maru: { label: 'Zen Maru Gothic（丸ゴシック）', family: `"Zen Maru Gothic", ${CJK_FALLBACK}`, weight: 900 },
   gothic: { label: 'Noto Sans JP（黑體）', family: `"Noto Sans JP Variable", ${CJK_FALLBACK}`, weight: 900 },
+  serif: { label: 'Noto Serif JP（明朝・粗）', family: `"Noto Serif JP Variable", ${SERIF_FALLBACK}`, weight: 900 },
+  mincho: { label: 'Shippori Mincho B1（明朝・古典）', family: `"Shippori Mincho B1", ${SERIF_FALLBACK}`, weight: 800 },
 };
 
 export const THEMES = {
