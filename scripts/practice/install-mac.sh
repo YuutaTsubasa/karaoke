@@ -86,7 +86,12 @@ EOF
 plutil -lint -s "$plist.new" # stop here, before unloading the running agent, if it is not valid
 mv "$plist.new" "$plist"
 launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
-launchctl bootstrap "gui/$(id -u)" "$plist"
+# bootout returns before the old agent is gone; bootstrap fails until it is.
+for try in 1 2 3 4 5 6 7 8 9 10; do
+  launchctl bootstrap "gui/$(id -u)" "$plist" 2>/dev/null && break
+  [ "$try" = 10 ] && { echo "could not start the agent: launchctl bootstrap gui/$(id -u) \"$plist\"" >&2; exit 1; }
+  sleep 1
+done
 
 fw=/usr/libexec/ApplicationFirewall/socketfilterfw
 if "$fw" --getglobalstate 2>/dev/null | grep -q enabled; then

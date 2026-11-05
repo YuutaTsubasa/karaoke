@@ -34,22 +34,29 @@
   let width = $state(1280);
   let height = $state(720);
 
-  // Look of the lyrics, remembered on this device only.
-  const saved = (() => {
+  // Look of the lyrics: a chosen person's is kept with their profile on the server;
+  // without one, this device remembers its own.
+  let deviceLook = (() => {
     try {
       return JSON.parse(localStorage.getItem('karaoke.practice.look')) || {};
     } catch {
       return {};
     }
   })();
-  let font = $state(FONTS[saved.font] ? saved.font : 'rounded');
-  let theme = $state(THEMES[saved.theme] ? saved.theme : 'blue');
+  let font = $state('rounded');
+  let theme = $state('blue');
   let lookOpen = $state(false);
-  $effect(() => {
-    try {
-      localStorage.setItem('karaoke.practice.look', JSON.stringify({ font, theme }));
-    } catch {}
-  });
+  function showLook(l) {
+    font = FONTS[l?.font] ? l.font : 'rounded';
+    theme = THEMES[l?.theme] ? l.theme : 'blue';
+  }
+  function setLook(next) {
+    font = next.font ?? font;
+    theme = next.theme ?? theme;
+    const l = { font, theme };
+    if (mine) change(mine.name, { look: l }).catch(() => {});
+    else store('karaoke.practice.look', (deviceLook = l));
+  }
 
   // Who is singing: profiles with their own song list and key per song, kept on
   // the server (GET/PUT /api/profiles); which one this device uses is remembered here.
@@ -61,6 +68,15 @@
   let newName = $state('');
   let tab = $state('mine');
   let mine = $derived(profiles.find((p) => p.name === me) ?? null);
+  // Switch looks only when the person changes (or their profile first arrives),
+  // not on every saved change, so quick taps do not flicker back.
+  let lookFor;
+  $effect(() => {
+    const who = mine?.name ?? null;
+    if (who === lookFor) return;
+    lookFor = who;
+    showLook(mine?.look ?? deviceLook);
+  });
 
   // https: the practice server may also listen with its own certificate.
   let info = $state({ https: 0, ca: false });
@@ -482,7 +498,7 @@
         <div class="group">
           <span>字型</span>
           {#each Object.entries(FONTS) as [id, f] (id)}
-            <button class:on={font === id} style="font-family: {f.family}; font-weight: {f.weight}" onclick={() => (font = id)}>
+            <button class:on={font === id} style="font-family: {f.family}; font-weight: {f.weight}" onclick={() => setLook({ font: id })}>
               {f.label.replace(/（.*）/, '')}
             </button>
           {/each}
@@ -490,7 +506,7 @@
         <div class="group">
           <span>顏色</span>
           {#each Object.entries(THEMES) as [id, t] (id)}
-            <button class:on={theme === id} onclick={() => (theme = id)}>
+            <button class:on={theme === id} onclick={() => setLook({ theme: id })}>
               <i style="background: {t.sungFill}"></i>{t.label.replace(/（.*）/, '')}
             </button>
           {/each}

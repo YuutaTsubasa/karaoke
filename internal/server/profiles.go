@@ -1,12 +1,12 @@
 package server
 
 // Practice profiles: the people who sing on the practice page, each with their own
-// song list and key per song. Kept in one small JSON file outside the song folders,
+// song list, key per song and look of the lyrics (font and colors). Kept in one small JSON file outside the song folders,
 // so the library itself stays read-only on a practice server.
 //
-//	GET    /api/profiles          { profiles: [{ name, songs: [id], keys: { id: n } }] }
-//	PUT    /api/profiles/:name    create or replace { songs, keys }
-//	POST   /api/profiles/:name    one change: { add: id } | { remove: id } | { song: id, key: n | null }
+//	GET    /api/profiles          { profiles: [{ name, songs: [id], keys: { id: n }, look?: { font, theme } }] }
+//	PUT    /api/profiles/:name    create or replace { songs, keys, look? }
+//	POST   /api/profiles/:name    one change: { add: id } | { remove: id } | { song: id, key: n | null } | { look: { font, theme } }
 //	DELETE /api/profiles/:name
 //	GET    /api/practice          { https: port or 0, ca: bool } for the practice page
 //	GET    /ca.crt                the practice server's CA certificate, to install on devices
@@ -34,6 +34,30 @@ type profile struct {
 	Name  string         `json:"name"`
 	Songs []string       `json:"songs"`
 	Keys  map[string]int `json:"keys"`
+	Look  *look          `json:"look,omitempty"`
+}
+
+// The practice page's font and color theme ids; the page falls back to its
+// defaults for ids it does not know.
+type look struct {
+	Font  string `json:"font"`
+	Theme string `json:"theme"`
+}
+
+func (l *look) valid() bool {
+	return l == nil || (validLookID(l.Font) && validLookID(l.Theme))
+}
+
+func validLookID(id string) bool {
+	if id == "" || len(id) > 40 {
+		return false
+	}
+	for _, r := range id {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 type profileFile struct {
@@ -147,6 +171,10 @@ func (s *Server) handleProfiles(w http.ResponseWriter, r *http.Request, rest []s
 				return
 			}
 		}
+		if !p.Look.valid() {
+			sendError(w, http.StatusBadRequest, "bad look")
+			return
+		}
 		for id, k := range p.Keys {
 			if id == "" || len(id) > 200 || k < -maxKey || k > maxKey {
 				sendError(w, http.StatusBadRequest, fmt.Sprintf("bad key for %q", id))
@@ -175,6 +203,7 @@ func (s *Server) handleProfiles(w http.ResponseWriter, r *http.Request, rest []s
 			Remove string `json:"remove"`
 			Song   string `json:"song"`
 			Key    *int   `json:"key"` // with song; null = back to the song's own key
+			Look   *look  `json:"look"`
 		}
 		if err := json.NewDecoder(io.LimitReader(r.Body, 16<<10)).Decode(&op); err != nil {
 			sendError(w, http.StatusBadRequest, "invalid json")
@@ -195,6 +224,12 @@ func (s *Server) handleProfiles(w http.ResponseWriter, r *http.Request, rest []s
 			}
 		}
 		switch {
+		case op.Look != nil:
+			if !op.Look.valid() {
+				sendError(w, http.StatusBadRequest, "bad look")
+				return
+			}
+			p.Look = op.Look
 		case op.Add != "":
 			if !contains(p.Songs, op.Add) {
 				if len(p.Songs) >= maxProfileSongs {

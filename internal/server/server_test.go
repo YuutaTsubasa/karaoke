@@ -301,18 +301,20 @@ func TestPracticeProfiles(t *testing.T) {
 	for _, c := range [][2]string{
 		{"/api/profiles/" + url.PathEscape(" spaced"), `{}`},
 		{"/api/profiles/a", `{"keys":{"song":40}}`},
+		{"/api/profiles/a", `{"look":{"font":"","theme":"blue"}}`},
+		{"/api/profiles/a", `{"look":{"font":"<b>","theme":"blue"}}`},
 		{"/api/profiles/a", `not json`},
 	} {
 		if res, _ := do(t, "PUT", ts.URL+c[0], c[1]); res.StatusCode != 400 {
 			t.Fatalf("PUT %s %s: %d, want 400", c[0], c[1], res.StatusCode)
 		}
 	}
-	for _, op := range []string{`{"add":"b"}`, `{"add":"c"}`, `{"remove":"song"}`, `{"song":"b","key":2}`, `{"song":"song","key":null}`} {
+	for _, op := range []string{`{"add":"b"}`, `{"add":"c"}`, `{"remove":"song"}`, `{"song":"b","key":2}`, `{"song":"song","key":null}`, `{"look":{"font":"rounded","theme":"pink"}}`} {
 		if res, body := do(t, "POST", ts.URL+name, op); res.StatusCode != 200 {
 			t.Fatalf("POST %s: %d %s", op, res.StatusCode, body)
 		}
 	}
-	if _, body := do(t, "GET", ts.URL+"/api/profiles", ""); !strings.Contains(body, `"songs":["b","c"]`) || !strings.Contains(body, `"keys":{"b":2}`) {
+	if _, body := do(t, "GET", ts.URL+"/api/profiles", ""); !strings.Contains(body, `"songs":["b","c"]`) || !strings.Contains(body, `"keys":{"b":2}`) || !strings.Contains(body, `"look":{"font":"rounded","theme":"pink"}`) {
 		t.Fatalf("after changes: %s", body)
 	}
 	if res, _ := do(t, "POST", ts.URL+"/api/profiles/nobody", `{"add":"x"}`); res.StatusCode != 404 {
